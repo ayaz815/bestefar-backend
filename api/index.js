@@ -28,6 +28,11 @@ app.use("/api/forms", formRoutes);
 app.use("/api/music", musicRoutes);
 app.use("/api/zip", zipRoutes);
 
+// Test Route (To check if API is working)
+app.get("/api", (req, res) => {
+  res.send("API is running successfully!");
+});
+
 // Endpoint to generate ZIP file
 app.get("/download-zip", async (req, res) => {
   try {
