@@ -65,3 +65,5 @@ app.get("/download-zip", async (req, res) => {
     res.status(500).send("Failed to generate ZIP file.");
   }
 });
+
+module.exports = app;
