@@ -3,7 +3,9 @@ const multer = require("multer");
 const { uploadMusic } = require("../controllers/musicController");
 
 const router = express.Router();
-const upload = multer({ dest: "uploads/" });
+
+// Use in-memory storage (no local disk access)
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.post("/upload-music/:page", upload.single("musicFile"), uploadMusic);
 
