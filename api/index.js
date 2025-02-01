@@ -1,9 +1,9 @@
 require("dotenv").config();
 const express = require("express");
 // const connectDB = require("./config/db");
-const formRoutes = require("./routes/formRoutes");
-const musicRoutes = require("./routes/musicRoutes");
-const zipRoutes = require("./routes/zipRoutes");
+const formRoutes = require("../routes/formRoutes");
+const musicRoutes = require("../routes/musicRoutes");
+const zipRoutes = require("../routes/zipRoutes");
 const JSZip = require("jszip");
 const path = require("path");
 const fs = require("fs");
