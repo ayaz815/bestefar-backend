@@ -4,11 +4,11 @@ const AWS = require("aws-sdk");
 const path = require("path");
 
 // Configure AWS S3
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
-});
+// const s3 = new AWS.S3({
+//   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+//   region: process.env.AWS_REGION,
+// });
 
 const saveForm = async (req, res) => {
   const { page, question, answer, firmNaming } = req.body;
@@ -41,28 +41,28 @@ const saveForm = async (req, res) => {
     jsonData[`screen${page}`] = { question, answer, firmNaming };
 
     // Since we can't write to the local file system, store JSON elsewhere (e.g., S3)
-    const jsonParams = {
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: "content.json",
-      Body: JSON.stringify(jsonData, null, 2),
-      ContentType: "application/json",
-    };
+    // const jsonParams = {
+    //   Bucket: process.env.AWS_BUCKET_NAME,
+    //   Key: "content.json",
+    //   Body: JSON.stringify(jsonData, null, 2),
+    //   ContentType: "application/json",
+    // };
 
-    await s3.upload(jsonParams).promise();
-    console.log("JSON file uploaded successfully!");
+    // await s3.upload(jsonParams).promise();
+    // console.log("JSON file uploaded successfully!");
 
     // Handle music file upload if provided
-    if (req.file) {
-      const musicParams = {
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: `musicFiles/music${page}.mp3`,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype,
-      };
+    // if (req.file) {
+    //   const musicParams = {
+    //     Bucket: process.env.AWS_BUCKET_NAME,
+    //     Key: `musicFiles/music${page}.mp3`,
+    //     Body: req.file.buffer,
+    //     ContentType: req.file.mimetype,
+    //   };
 
-      await s3.upload(musicParams).promise();
-      console.log(`Music file for page ${page} uploaded successfully!`);
-    }
+    //   await s3.upload(musicParams).promise();
+    //   console.log(`Music file for page ${page} uploaded successfully!`);
+    // }
 
     res.status(200).json({
       message: `Form and music file (if provided) saved successfully for page ${page}.`,
