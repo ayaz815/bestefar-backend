@@ -28,8 +28,7 @@ const saveForm = async (req, res) => {
     //   __dirname,
     //   "../../html/data/content/content.json"
     // );
-    const jsonFilePath =
-      "/var/www/html/bestefar-html/data/content/content.json";
+    const jsonFilePath = "/var/www/bestefar-html/data/content/content.json";
 
     console.log("Resolved file path:", jsonFilePath);
 
