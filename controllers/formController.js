@@ -24,10 +24,11 @@ const saveForm = async (req, res) => {
 
   try {
     // Update JSON data
-    const jsonFilePath = path.join(
-      __dirname,
-      "../../html/data/content/content.json"
-    );
+    // const jsonFilePath = path.join(
+    //   __dirname,
+    //   "../../html/data/content/content.json"
+    // );
+    const jsonFilePath = "/var/www/html/data/content/content.json";
 
     console.log("Resolved file path:", jsonFilePath);
 

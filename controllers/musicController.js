@@ -7,10 +7,11 @@ const uploadMusic = (req, res) => {
   if (!req.file) return res.status(400).send("No music file uploaded.");
 
   const tempPath = req.file.path;
-  const targetPath = path.join(
-    __dirname,
-    `../../html/data/musicFiles/music${page}.mp3`
-  );
+  // const targetPath = path.join(
+  //   __dirname,
+  //   `../../html/data/musicFiles/music${page}.mp3`
+  // );
+  const musicFilePath = `/var/www/html/data/musicFiles/music${page}.mp3`;
 
   fs.rename(tempPath, targetPath, (err) => {
     if (err) {
