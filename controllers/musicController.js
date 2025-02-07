@@ -11,7 +11,7 @@ const uploadMusic = (req, res) => {
   //   __dirname,
   //   `../../html/data/musicFiles/music${page}.mp3`
   // );
-  const musicFilePath = `/var/www/html/data/musicFiles/music${page}.mp3`;
+  const musicFilePath = `/var/www/html/bestefar-html/data/musicFiles/music${page}.mp3`;
 
   fs.rename(tempPath, targetPath, (err) => {
     if (err) {
