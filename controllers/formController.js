@@ -12,27 +12,33 @@ const saveForm = async (req, res) => {
 
   try {
     const jsonFilePath = "/var/www/bestefar-html/data/content/content.json";
-
     console.log("Resolved file path:", jsonFilePath);
 
-    // Read existing JSON data (if file exists)
+    // Force fresh read of JSON file (avoid caching)
     let jsonData = {};
     if (fs.existsSync(jsonFilePath)) {
-      const fileContent = fs.readFileSync(jsonFilePath, "utf8");
+      const fileContent = fs.readFileSync(jsonFilePath, {
+        encoding: "utf8",
+        flag: "r",
+      }); // Open file fresh each time
       jsonData = JSON.parse(fileContent);
     }
 
     // Update JSON data
     jsonData[`screen${page}`] = { question, answer, firmNaming };
 
-    // Write back updated JSON
+    // Write updated JSON back to the file
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
 
     console.log(`✅ JSON file updated successfully for screen${page}`);
 
-    res.status(200).json({
-      message: `Form data saved successfully for page ${page}.`,
-    });
+    // Return success response
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: `Form data saved successfully for page ${page}.`,
+      });
   } catch (error) {
     console.error("❌ Error saving form:", error);
     res.status(500).json({ error: "Failed to save form and update JSON." });
