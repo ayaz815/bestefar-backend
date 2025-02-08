@@ -7,6 +7,7 @@ const zipRoutes = require("./routes/zipRoutes");
 const JSZip = require("jszip");
 const path = require("path");
 const fs = require("fs");
+const cors = require("cors");
 
 const app = express();
 
