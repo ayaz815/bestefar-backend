@@ -16,13 +16,14 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(
-  require("cors")({
+  cors({
     origin: [
       "http://localhost:5173", // Allow local development
       "http://bestefar-frontend.s3-website.eu-north-1.amazonaws.com", // Allow S3 frontend
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true, // Allow cookies and authentication headers
   })
 );
 
