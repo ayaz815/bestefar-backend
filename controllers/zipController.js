@@ -5,7 +5,8 @@ const path = require("path");
 const generateZip = async (req, res) => {
   try {
     const zip = new JSZip();
-    const htmlFolderPath = path.join(__dirname, "../../html");
+    // const htmlFolderPath = path.join(__dirname, "../../html");
+    const htmlFolderPath = "/var/www/bestefar-html";
 
     // Function to recursively add files and folders to the ZIP
     const addFolderToZip = (folderPath, zipFolder) => {
