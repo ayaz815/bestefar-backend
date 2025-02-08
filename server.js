@@ -1,9 +1,9 @@
 require("dotenv").config();
 const express = require("express");
 // const connectDB = require("./config/db");
-const formRoutes = require("./routes/formRoutes");
-const musicRoutes = require("./routes/musicRoutes");
-const zipRoutes = require("./routes/zipRoutes");
+const formRoutes = require("../routes/formRoutes");
+const musicRoutes = require("../routes/musicRoutes");
+const zipRoutes = require("../routes/zipRoutes");
 const JSZip = require("jszip");
 const path = require("path");
 const fs = require("fs");
@@ -27,6 +27,11 @@ app.use(
 app.use("/api/forms", formRoutes);
 app.use("/api/music", musicRoutes);
 app.use("/api/zip", zipRoutes);
+
+// Test Route (To check if API is working)
+app.get("/api", (req, res) => {
+  res.send("API is running successfully!");
+});
 
 // Endpoint to generate ZIP file
 app.get("/download-zip", async (req, res) => {
@@ -66,8 +71,7 @@ app.get("/download-zip", async (req, res) => {
   }
 });
 
-// Start server
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
