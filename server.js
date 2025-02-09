@@ -8,6 +8,7 @@ const JSZip = require("jszip");
 const path = require("path");
 const fs = require("fs");
 const cors = require("cors");
+const compression = require("compression");
 
 const app = express();
 
@@ -16,6 +17,7 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+app.use(compression());
 app.use(
   cors({
     origin: [
