@@ -3,6 +3,7 @@ const express = require("express");
 // const connectDB = require("./config/db");
 const formRoutes = require("./routes/formRoutes");
 const musicRoutes = require("./routes/musicRoutes");
+const audioRoutes = require("./routes/audioRoutes");
 const zipRoutes = require("./routes/zipRoutes");
 const JSZip = require("jszip");
 const path = require("path");
@@ -33,6 +34,7 @@ app.use(
 // Routes
 app.use("/api/forms", formRoutes);
 app.use("/api/music", musicRoutes);
+app.use("/api/audio", audioRoutes);
 app.use("/api/zip", zipRoutes);
 
 // Endpoint to generate ZIP file
