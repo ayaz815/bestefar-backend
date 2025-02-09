@@ -55,7 +55,7 @@ const generateZip = async (req, res) => {
     const zip = new JSZip();
     const htmlFolderPath = "/var/www/bestefar-html"; // Ensure this path is correct
 
-    // Function to recursively add files to the ZIP asynchronously
+    // Function to recursively add files to ZIP asynchronously
     const addFolderToZip = async (folderPath, zipFolder) => {
       const items = await fs.promises.readdir(folderPath);
       for (const item of items) {
@@ -70,10 +70,10 @@ const generateZip = async (req, res) => {
       }
     };
 
-    // Add the `html` folder to the ZIP asynchronously
+    // Add `html` folder to ZIP asynchronously
     await addFolderToZip(htmlFolderPath, zip.folder("bestefar-html"));
 
-    // Generate the ZIP file asynchronously as a stream
+    // Generate ZIP as a stream
     const zipStream = zip.generateNodeStream({
       type: "nodebuffer",
       streamFiles: true,
@@ -86,11 +86,13 @@ const generateZip = async (req, res) => {
     );
     res.setHeader("Content-Type", "application/zip");
 
-    // Pipe the ZIP stream to the response
+    // Pipe the ZIP stream to response properly
     await pipelineAsync(zipStream, res);
   } catch (error) {
     console.error("❌ Error generating ZIP file:", error);
-    res.status(500).send("Failed to generate ZIP file.");
+    if (!res.headersSent) {
+      res.status(500).send("Failed to generate ZIP file.");
+    }
   }
 };
 

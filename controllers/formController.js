@@ -17,7 +17,7 @@ const saveForm = async (req, res) => {
     // Force fresh read of JSON file (avoid caching)
     let jsonData = {};
     if (fs.existsSync(jsonFilePath)) {
-      const fileContent = fs.readFileSync(jsonFilePath, {
+      const fileContent = await fs.readFileSync(jsonFilePath, {
         encoding: "utf8",
         flag: "r",
       }); // Open file fresh each time
@@ -33,12 +33,10 @@ const saveForm = async (req, res) => {
     console.log(`✅ JSON file updated successfully for screen${page}`);
 
     // Return success response
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: `Form data saved successfully for page ${page}.`,
-      });
+    res.status(200).json({
+      success: true,
+      message: `Form data saved successfully for page ${page}.`,
+    });
   } catch (error) {
     console.error("❌ Error saving form:", error);
     res.status(500).json({ error: "Failed to save form and update JSON." });
