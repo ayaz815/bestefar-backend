@@ -6,6 +6,6 @@ const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.post("/upload-music/:page", upload.single("musicFile"), uploadMusic);
+router.post("/upload-music/:page", upload.single("file"), uploadMusic);
 
 module.exports = router;

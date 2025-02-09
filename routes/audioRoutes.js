@@ -6,6 +6,6 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Route for uploading audio files
-router.post("/upload-audio/:page", upload.single("audioFile"), uploadAudio);
+router.post("/upload-audio/:page", upload.single("file"), uploadAudio);
 
 module.exports = router;
