@@ -1,6 +1,6 @@
 const express = require("express");
 const multer = require("multer");
-const { uploadAudio } = require("../controllers/uploadAudio");
+const { uploadAudio } = require("../controllers/audioController");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
