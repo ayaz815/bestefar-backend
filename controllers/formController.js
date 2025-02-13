@@ -2,7 +2,16 @@ const fs = require("fs");
 const path = require("path");
 
 const saveForm = async (req, res) => {
-  const { page, question, answer, firmNaming } = req.body;
+  const {
+    page,
+    quizName,
+    question,
+    answer,
+    firmNaming,
+    musicName,
+    artistName,
+    additionalNotes,
+  } = req.body;
 
   if (!page || !question || !answer || !firmNaming) {
     return res
@@ -25,7 +34,15 @@ const saveForm = async (req, res) => {
     }
 
     // Update JSON data
-    jsonData[`screen${page}`] = { question, answer, firmNaming };
+    jsonData[`screen${page}`] = {
+      quizName,
+      question,
+      answer,
+      firmNaming,
+      musicName,
+      artistName,
+      additionalNotes,
+    };
 
     // Write updated JSON back to the file
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
