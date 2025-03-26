@@ -21,6 +21,7 @@ const saveForm = async (req, res) => {
 
   try {
     const jsonFilePath = "/var/www/bestefar-html/data/content/content.json";
+    // const jsonFilePath = "../../html/data/content/content.json";
     console.log("Resolved file path:", jsonFilePath);
 
     // Force fresh read of JSON file (avoid caching)

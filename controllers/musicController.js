@@ -9,6 +9,8 @@ const uploadMusic = async (req, res) => {
     const musicFilePath = `/var/www/bestefar-html/data/musicFiles/music${page}.mp3`;
     const jsonFilePath = "/var/www/bestefar-html/data/content/content.json";
 
+    // const musicFilePath = `../../html/data/musicFiles/music${page}.mp3`;
+    // const jsonFilePath = "../../html/datacontent/content.json";
     console.log(`Uploading music file to: ${musicFilePath}`);
 
     // Move uploaded file to the correct path

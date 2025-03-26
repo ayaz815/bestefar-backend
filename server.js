@@ -22,7 +22,7 @@ app.use(compression());
 app.use(
   cors({
     origin: [
-      "http://localhost:5173", // Allow local development
+      "http://localhost:5174", // Allow local development
       "http://bestefar-frontend.s3-website.eu-north-1.amazonaws.com", // Allow S3 frontend
       "https://bestefar.no/html-generator/",
     ],
