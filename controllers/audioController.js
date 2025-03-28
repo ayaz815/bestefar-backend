@@ -30,8 +30,8 @@ const uploadAudio = async (req, res) => {
     if (!jsonData[`screen${page}`]) {
       jsonData[`screen${page}`] = {};
     }
-    jsonData[`screen${page}`].firmNaming = `music${page}.mp3`;
-
+    // jsonData[`screen${page}`].firmNaming = `music${page}.mp3`;
+    jsonData[`screen${page}`].audioFile = `audio${page}.mp3`;
     // Write updated JSON back to file
     await fs.writeFile(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
 
