@@ -24,7 +24,7 @@ app.use(
     origin: [
       "http://localhost:5174", // Allow local development
       "http://bestefar-frontend.s3-website.eu-north-1.amazonaws.com", // Allow S3 frontend
-      "https://bestefar.no/html-generator/",
+      "https://bestefar.no/html-generator-app/",
       "http://localhost:5173",
       "https://bestefar.no",
     ],
