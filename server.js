@@ -27,6 +27,7 @@ app.use(
       "https://bestefar.no/html-generator-app/",
       "http://localhost:5173",
       "https://bestefar.no",
+      "*",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
