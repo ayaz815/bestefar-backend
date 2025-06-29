@@ -13,6 +13,11 @@ const uploadMusic = async (req, res) => {
     // const jsonFilePath = "../../html/datacontent/content.json";
     console.log(`Uploading music file to: ${musicFilePath}`);
 
+    const musicDir = path.dirname(musicFilePath);
+
+    // Make sure the /musicFiles folder exists
+    await fs.mkdir(musicDir, { recursive: true });
+
     // Move uploaded file to the correct path
     await fs.writeFile(musicFilePath, req.file.buffer);
 

@@ -26,6 +26,7 @@ app.use(
       "http://bestefar-frontend.s3-website.eu-north-1.amazonaws.com", // Allow S3 frontend
       "https://bestefar.no/html-generator/",
       "http://localhost:5173",
+      "https://bestefar.no",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
