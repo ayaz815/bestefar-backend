@@ -41,6 +41,10 @@ app.use("/api/music", musicRoutes);
 app.use("/api/audio", audioRoutes);
 app.use("/api/zip", zipRoutes);
 
+app.get("/", (req, res) => {
+  res.send("Backend is running and accessible via Nginx!");
+});
+
 // Endpoint to generate ZIP file
 app.get("/download-zip", async (req, res) => {
   try {
