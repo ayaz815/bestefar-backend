@@ -1,18 +1,24 @@
-// const mongoose = require("mongoose");
+const { MongoClient } = require("mongodb");
 
-// const connectDB = async () => {
-//   try {
-//     const conn = await mongoose.connect(process.env.MONGO_URI, {
-//       useNewUrlParser: true,
-//       useUnifiedTopology: true,
-//       bufferCommands: false, // Disable buffering
-//     });
-//     console.log("MongoDB Connected:", mongoose.connection.host);
-//     console.log(`MongoDB Connected: ${conn.connection.host}`);
-//   } catch (error) {
-//     console.error("MongoDB connection error:", error.message);
-//     process.exit(1); // Exit process with failure
-//   }
-// };
+// const uri =
+//   "mongodb+srv://bestefar-html-generator:Itsyazii@815@bestefar.oupgqdq.mongodb.net/?retryWrites=true&w=majority&appName=Bestefar";
+const uri =
+  "mongodb+srv://bestefar-html-generator:Itsyazii%40815@bestefar.oupgqdq.mongodb.net/?retryWrites=true&w=majority&appName=Bestefar";
 
-// module.exports = connectDB;
+const client = new MongoClient(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+async function connectDB() {
+  try {
+    await client.connect();
+    console.log("✅ MongoDB connected");
+    return client.db("bestefar"); // use this db name consistently
+  } catch (err) {
+    console.error("❌ MongoDB connection failed:", err);
+    process.exit(1);
+  }
+}
+
+module.exports = connectDB;

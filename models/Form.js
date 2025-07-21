@@ -1,13 +1,23 @@
 const mongoose = require("mongoose");
 
-const formSchema = new mongoose.Schema({
+const ScreenSchema = new mongoose.Schema({
   page: { type: Number, required: true },
-  question: { type: String, required: true },
-  answer: { type: String, required: true },
-  firmNaming: { type: String, required: true },
+  question: String,
+  answer: String,
+  firmNaming: String,
+  musicName: String,
+  artistName: String,
+  musicFileName: String,
+  audioFileName: String,
+  musicFileUrl: String,
+  audioFileUrl: String,
+  additionalNotes: String,
+});
+
+const QuizSchema = new mongoose.Schema({
+  quizName: { type: String, required: true },
+  screens: [ScreenSchema],
   createdAt: { type: Date, default: Date.now },
 });
 
-const Form = mongoose.model("Form", formSchema);
-
-module.exports = Form;
+module.exports = mongoose.model("Quiz", QuizSchema);

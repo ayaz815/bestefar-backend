@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const Quiz = require("../models/Quiz");
 
 const saveForm = async (req, res) => {
   const {
@@ -13,13 +14,14 @@ const saveForm = async (req, res) => {
     additionalNotes,
   } = req.body;
 
-  if (!page || !question || !answer || !firmNaming) {
-    return res
-      .status(400)
-      .json({ error: "Page, question, answer, and firmNaming are required." });
+  if (!page || !question || !answer || !firmNaming || !quizName) {
+    return res.status(400).json({
+      error: "Page, question, answer, firmNaming, and quizName are required.",
+    });
   }
 
   try {
+    // ✅ Step 1: Update local JSON file
     const jsonFilePath = "/var/www/bestefar-html/data/content/content.json";
     // const jsonFilePath = "../../html/data/content/content.json";
     console.log("Resolved file path:", jsonFilePath);
@@ -50,10 +52,34 @@ const saveForm = async (req, res) => {
 
     console.log(`✅ JSON file updated successfully for screen${page}`);
 
-    // Return success response
-    res.status(200).json({
+    // ✅ Step 2: Upsert into MongoDB
+    const quiz = await Quiz.findOneAndUpdate(
+      { quizName },
+      {
+        $set: {
+          [`screens.${page - 1}`]: {
+            page,
+            question,
+            answer,
+            firmNaming,
+            musicName,
+            artistName,
+            additionalNotes,
+          },
+        },
+      },
+      {
+        new: true,
+        upsert: true,
+      }
+    );
+
+    console.log(`✅ MongoDB quiz updated for page ${page}`);
+
+    return res.status(200).json({
       success: true,
-      message: `Form data saved successfully for page ${page}.`,
+      message: `Form saved successfully for page ${page}`,
+      data: quiz,
     });
   } catch (error) {
     console.error("❌ Error saving form:", error);

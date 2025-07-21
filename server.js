@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-// const connectDB = require("./config/db");
+const connectDB = require("./config/db");
 const formRoutes = require("./routes/formRoutes");
 const musicRoutes = require("./routes/musicRoutes");
 const audioRoutes = require("./routes/audioRoutes");
@@ -14,7 +14,7 @@ const compression = require("compression");
 const app = express();
 
 // Database connection
-// connectDB();
+connectDB();
 
 // Middleware
 app.use(express.json());
@@ -22,14 +22,14 @@ app.use(compression());
 app.use(
   cors({
     origin: [
-      "http://localhost:5174", // Allow local development
-      "http://bestefar-frontend.s3-website.eu-north-1.amazonaws.com", // Allow S3 frontend
+      "https://localhost:5174", // Allow local development
+      "https://bestefar-frontend.s3-website.eu-north-1.amazonaws.com", // Allow S3 frontend
       "https://bestefar.no/html-generator-app/#/",
-      "http://localhost:5173",
+      "https://localhost:5173",
       "https://bestefar.no",
       "*",
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true, // Allow cookies and authentication headers
   })
@@ -86,5 +86,5 @@ app.get("/download-zip", async (req, res) => {
 // Start server
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on https://localhost:${PORT}`);
 });
