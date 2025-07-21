@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
-const Quiz = require("../models/Quiz");
+
+const Quiz = require("../models/Form");
 
 const saveForm = async (req, res) => {
   const {

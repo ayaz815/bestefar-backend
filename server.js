@@ -10,6 +10,7 @@ const path = require("path");
 const fs = require("fs");
 const cors = require("cors");
 const compression = require("compression");
+const Quiz = require("./models/Form");
 
 const app = express();
 
@@ -80,6 +81,15 @@ app.get("/download-zip", async (req, res) => {
   } catch (error) {
     console.error("Error generating ZIP file:", error);
     res.status(500).send("Failed to generate ZIP file.");
+  }
+});
+
+app.get("/api/verify-mongo", async (req, res) => {
+  try {
+    const quizzes = await Quiz.find().limit(1);
+    res.json({ connected: true, count: quizzes.length });
+  } catch (err) {
+    res.status(500).json({ connected: false, error: err.message });
   }
 });
 

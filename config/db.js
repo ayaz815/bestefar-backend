@@ -1,24 +1,21 @@
-const { MongoClient } = require("mongodb");
+// config/db.js
+const mongoose = require("mongoose");
 
-// const uri =
-//   "mongodb+srv://bestefar-html-generator:Itsyazii@815@bestefar.oupgqdq.mongodb.net/?retryWrites=true&w=majority&appName=Bestefar";
-const uri =
-  "mongodb+srv://bestefar-html-generator:Itsyazii%40815@bestefar.oupgqdq.mongodb.net/?retryWrites=true&w=majority&appName=Bestefar";
-
-const client = new MongoClient(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-
-async function connectDB() {
+const connectDB = async () => {
   try {
-    await client.connect();
-    console.log("✅ MongoDB connected");
-    return client.db("bestefar"); // use this db name consistently
+    const conn = await mongoose.connect(
+      "mongodb+srv://bestefar-html-generator:Itsyazii%40815@bestefar.oupgqdq.mongodb.net/bestefar?retryWrites=true&w=majority&appName=Bestefar",
+      {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        dbName: "bestefar", // Ensures correct DB
+      }
+    );
+    console.log(`✅ MongoDB connected: ${conn.connection.host}`);
   } catch (err) {
-    console.error("❌ MongoDB connection failed:", err);
+    console.error("❌ MongoDB connection failed:", err.message);
     process.exit(1);
   }
-}
+};
 
 module.exports = connectDB;
