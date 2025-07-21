@@ -21,11 +21,15 @@ const uploadMusic = async (req, res) => {
     // Move uploaded file to the correct path
     await fs.writeFile(musicFilePath, req.file.buffer);
 
+    // Upload to S3
+    const s3Url = await uploadToS3(req.file.buffer, musicFileName);
+
     // Read the existing JSON file
     let jsonData = {};
     try {
       const fileContent = await fs.readFile(jsonFilePath, "utf8");
       jsonData = JSON.parse(fileContent);
+      jsonData[`screen${page}`].musicFileUrl = s3Url;
     } catch (error) {
       console.warn("No existing JSON file found. Creating a new one.");
     }
@@ -39,6 +43,8 @@ const uploadMusic = async (req, res) => {
 
     // Write updated JSON back to file
     await fs.writeFile(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
+
+    console.log(`✅ Music uploaded locally and to S3 for screen${page}`);
 
     console.log(
       `✅ Music file and JSON updated successfully for screen${page}`
