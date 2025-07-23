@@ -11,7 +11,7 @@ const fs = require("fs");
 const cors = require("cors");
 const compression = require("compression");
 const Quiz = require("./models/Form");
-
+const s3Routes = require("./routes/s3UploadRoute");
 const app = express();
 
 // Database connection
@@ -41,6 +41,7 @@ app.use("/api/forms", formRoutes);
 app.use("/api/music", musicRoutes);
 app.use("/api/audio", audioRoutes);
 app.use("/api/zip", zipRoutes);
+app.use("/api/s3", s3Routes);
 
 app.get("/", (req, res) => {
   res.send("Backend is running and accessible via Nginx!");
@@ -96,5 +97,5 @@ app.get("/api/verify-mongo", async (req, res) => {
 // Start server
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
-  console.log(`Server running on https://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });

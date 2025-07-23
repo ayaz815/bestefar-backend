@@ -1,66 +1,107 @@
-const fs = require("fs").promises;
-const path = require("path");
+import fs from "fs/promises";
+import path from "path";
+import { uploadToS3 } from "../utils/s3Upload.js";
 
-const uploadMusic = async (req, res) => {
+export const uploadMusic = async (req, res) => {
   try {
     const page = parseInt(req.params.page);
-    if (!req.file) return res.status(400).send("No music file uploaded.");
+    const file = req.file;
 
-    const musicFilePath = `/var/www/bestefar-html/data/musicFiles/music${page}.mp3`;
-    const jsonFilePath = "/var/www/bestefar-html/data/content/content.json";
+    if (!file) return res.status(400).send("No music file uploaded.");
 
-    // const musicFilePath = `../../html/data/musicFiles/music${page}.mp3`;
-    // const jsonFilePath = "../../html/datacontent/content.json";
-    console.log(`Uploading music file to: ${musicFilePath}`);
+    const musicFileName = `music${page}.mp3`;
+    const localPath = `/var/www/bestefar-html/data/musicFiles/${musicFileName}`;
+    const jsonPath = "/var/www/bestefar-html/data/content/content.json";
 
-    const musicDir = path.dirname(musicFilePath);
+    await fs.mkdir(path.dirname(localPath), { recursive: true });
+    await fs.writeFile(localPath, file.buffer);
 
-    // Make sure the /musicFiles folder exists
-    await fs.mkdir(musicDir, { recursive: true });
+    const s3Url = await uploadToS3(file.buffer, musicFileName);
 
-    // Move uploaded file to the correct path
-    await fs.writeFile(musicFilePath, req.file.buffer);
-
-    // Upload to S3
-    const s3Url = await uploadToS3(req.file.buffer, musicFileName);
-
-    // Read the existing JSON file
     let jsonData = {};
     try {
-      const fileContent = await fs.readFile(jsonFilePath, "utf8");
-      jsonData = JSON.parse(fileContent);
-      jsonData[`screen${page}`].musicFileUrl = s3Url;
-    } catch (error) {
-      console.warn("No existing JSON file found. Creating a new one.");
+      const content = await fs.readFile(jsonPath, "utf8");
+      jsonData = JSON.parse(content);
+    } catch {
+      console.log("No existing content.json. Initializing new.");
     }
 
-    // Update JSON data
-    if (!jsonData[`screen${page}`]) {
-      jsonData[`screen${page}`] = {};
-    }
-    // jsonData[`screen${page}`].firmNaming = `music${page}.mp3`;
-    jsonData[`screen${page}`].musicFile = `music${page}.mp3`; // 🔁 Use a distinct key
+    if (!jsonData[`screen${page}`]) jsonData[`screen${page}`] = {};
+    jsonData[`screen${page}`].musicFile = musicFileName;
+    jsonData[`screen${page}`].musicFileUrl = s3Url;
 
-    // Write updated JSON back to file
-    await fs.writeFile(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
+    await fs.writeFile(jsonPath, JSON.stringify(jsonData, null, 2), "utf8");
 
-    console.log(`✅ Music uploaded locally and to S3 for screen${page}`);
-
-    console.log(
-      `✅ Music file and JSON updated successfully for screen${page}`
-    );
-
-    res.status(200).json({
-      success: true,
-      message: `Music file uploaded and JSON updated for page ${page}.`,
-    });
-  } catch (error) {
-    console.error("❌ Error uploading music and updating JSON:", error);
-    res.status(500).json({ error: "Failed to upload music and update JSON." });
+    res.status(200).json({ success: true, fileUrl: s3Url });
+  } catch (err) {
+    console.error("Upload error:", err);
+    res.status(500).json({ error: "Failed to upload music file." });
   }
 };
 
-module.exports = { uploadMusic };
+// const fs = require("fs").promises;
+// const path = require("path");
+
+// const uploadMusic = async (req, res) => {
+//   try {
+//     const page = parseInt(req.params.page);
+//     if (!req.file) return res.status(400).send("No music file uploaded.");
+
+//     const musicFilePath = `/var/www/bestefar-html/data/musicFiles/music${page}.mp3`;
+//     const jsonFilePath = "/var/www/bestefar-html/data/content/content.json";
+
+//     // const musicFilePath = `../../html/data/musicFiles/music${page}.mp3`;
+//     // const jsonFilePath = "../../html/datacontent/content.json";
+//     console.log(`Uploading music file to: ${musicFilePath}`);
+
+//     const musicDir = path.dirname(musicFilePath);
+
+//     // Make sure the /musicFiles folder exists
+//     await fs.mkdir(musicDir, { recursive: true });
+
+//     // Move uploaded file to the correct path
+//     await fs.writeFile(musicFilePath, req.file.buffer);
+
+//     // Upload to S3
+//     const s3Url = await uploadToS3(req.file.buffer, musicFileName);
+
+//     // Read the existing JSON file
+//     let jsonData = {};
+//     try {
+//       const fileContent = await fs.readFile(jsonFilePath, "utf8");
+//       jsonData = JSON.parse(fileContent);
+//       jsonData[`screen${page}`].musicFileUrl = s3Url;
+//     } catch (error) {
+//       console.warn("No existing JSON file found. Creating a new one.");
+//     }
+
+//     // Update JSON data
+//     if (!jsonData[`screen${page}`]) {
+//       jsonData[`screen${page}`] = {};
+//     }
+//     // jsonData[`screen${page}`].firmNaming = `music${page}.mp3`;
+//     jsonData[`screen${page}`].musicFile = `music${page}.mp3`; // 🔁 Use a distinct key
+
+//     // Write updated JSON back to file
+//     await fs.writeFile(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
+
+//     console.log(`✅ Music uploaded locally and to S3 for screen${page}`);
+
+//     console.log(
+//       `✅ Music file and JSON updated successfully for screen${page}`
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       message: `Music file uploaded and JSON updated for page ${page}.`,
+//     });
+//   } catch (error) {
+//     console.error("❌ Error uploading music and updating JSON:", error);
+//     res.status(500).json({ error: "Failed to upload music and update JSON." });
+//   }
+// };
+
+// module.exports = { uploadMusic };
 
 // const path = require("path");
 // const fs = require("fs");
