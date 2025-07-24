@@ -10,7 +10,8 @@ router.get("/s3-presigned-url", async (req, res) => {
       return res.status(400).json({ error: "Missing required query params" });
     }
 
-    const key = `${type}Files/${type}${page}.mp3`;
+    // const key = `${type}Files/${type}${page}.mp3`;
+    const key = `${type}Files/${encodeURIComponent(fileName)}`;
     const url = await generatePresignedUrl(key, contentType);
 
     const publicUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
