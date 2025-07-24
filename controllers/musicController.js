@@ -7,57 +7,64 @@ export const uploadMusic = async (req, res) => {
     const file = req.file;
 
     if (!file) return res.status(400).send("No music file uploaded.");
+
     const isDev = process.env.NODE_ENV !== "production";
 
     const musicFileName = `music${page}.mp3`;
-    const localPath = isDev
+    const musicFilePath = isDev
       ? path.join(process.cwd(), "html/data/musicFiles", musicFileName)
       : `/var/www/bestefar-html/data/musicFiles/${musicFileName}`;
 
-    const jsonPath = isDev
-      ? path.resolve(__dirname, "../../html/data/content/content.json")
+    const jsonFilePath = isDev
+      ? path.resolve(process.cwd(), "html/data/content/content.json")
       : "/var/www/bestefar-html/data/content/content.json";
 
-    // ✅ Write the file to local music folder (unchanged)
-    await fs.mkdir(path.dirname(localPath), { recursive: true });
-    await fs.writeFile(localPath, file.buffer);
+    // const musicFilePath = `../../html/data/musicFiles/music${page}.mp3`;
+    // const jsonFilePath = "../../html/data/content/content.json";
+
+    console.log(`Uploading music file to: ${musicFilePath}`);
+
+    // ✅ Ensure folder exists before saving
+    await fs.mkdir(path.dirname(musicFilePath), { recursive: true });
+    await fs.writeFile(musicFilePath, file.buffer);
 
     // ✅ Load or initialize content.json
     let jsonData = {};
     try {
-      const content = await fs.readFile(jsonPath, "utf8");
+      const content = await fs.readFile(jsonFilePath, "utf8");
       jsonData = JSON.parse(content);
-    } catch {
-      console.log("No existing content.json. Initializing new.");
+    } catch (error) {
+      console.warn("No existing content.json found. Initializing new.");
     }
 
-    // ✅ Ensure screen page exists
     if (!jsonData[`screen${page}`]) {
       jsonData[`screen${page}`] = {};
     }
 
-    // ✅ Set file name in JSON
+    // ✅ Always update local file reference
     jsonData[`screen${page}`].musicFile = musicFileName;
 
-    // ✅ If optional s3Url exists (for future use), also set in JSON
+    // ✅ Optionally update S3 URL if passed
     if (req.body.s3Url) {
       jsonData[`screen${page}`].musicFileUrl = req.body.s3Url;
     }
 
-    // ✅ Ensure content directory exists
-    await fs.mkdir(path.dirname(jsonPath), { recursive: true });
+    // ✅ Ensure JSON folder exists
+    await fs.mkdir(path.dirname(jsonFilePath), { recursive: true });
 
-    // ✅ Write updated content.json
-    await fs.writeFile(jsonPath, JSON.stringify(jsonData, null, 2), "utf8");
+    // ✅ Write updated JSON
+    await fs.writeFile(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
 
-    console.log(`✅ Music file and JSON updated for screen${page}`);
+    console.log(
+      `✅ Music file and JSON updated successfully for screen${page}`
+    );
 
     res.status(200).json({
       success: true,
       fileUrl: req.body.s3Url || `local://${musicFileName}`,
     });
   } catch (err) {
-    console.error("Upload error:", err);
+    console.error("❌ Error uploading music and updating JSON:", err);
     res.status(500).json({ error: "Failed to upload music file." });
   }
 };

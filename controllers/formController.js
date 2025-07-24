@@ -42,7 +42,18 @@ const saveForm = async (req, res) => {
     }
 
     // Update JSON data
+    // jsonData[`screen${page}`] = {
+    //   quizName,
+    //   question,
+    //   answer,
+    //   firmNaming,
+    //   musicName,
+    //   artistName,
+    //   additionalNotes,
+    // };
+
     jsonData[`screen${page}`] = {
+      ...(jsonData[`screen${page}`] || {}),
       quizName,
       question,
       answer,
@@ -57,20 +68,26 @@ const saveForm = async (req, res) => {
 
     console.log(`✅ JSON file updated successfully for screen${page}`);
 
+    const screenData = {
+      page,
+      question,
+      answer,
+      firmNaming,
+      musicName,
+      artistName,
+      musicFileName: req.body.musicFileName || "",
+      audioFileName: req.body.audioFileName || "",
+      musicFileUrl: req.body.musicFileUrl || "",
+      audioFileUrl: req.body.audioFileUrl || "",
+      additionalNotes,
+    };
+
     // ✅ Step 2: Upsert into MongoDB
     const quiz = await Quiz.findOneAndUpdate(
       { quizName },
       {
         $set: {
-          [`screens.${page - 1}`]: {
-            page,
-            question,
-            answer,
-            firmNaming,
-            musicName,
-            artistName,
-            additionalNotes,
-          },
+          [`screens.${page - 1}`]: screenData,
         },
       },
       {
