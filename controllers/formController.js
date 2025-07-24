@@ -23,7 +23,11 @@ const saveForm = async (req, res) => {
 
   try {
     // ✅ Step 1: Update local JSON file
-    const jsonFilePath = "/var/www/bestefar-html/data/content/content.json";
+    const isDev = process.env.NODE_ENV !== "production";
+    const jsonFilePath = isDev
+      ? path.resolve(__dirname, "../../html/data/content/content.json")
+      : "/var/www/bestefar-html/data/content/content.json";
+
     // const jsonFilePath = "../../html/data/content/content.json";
     console.log("Resolved file path:", jsonFilePath);
 

@@ -20,19 +20,29 @@ connectDB();
 // Middleware
 app.use(express.json());
 app.use(compression());
+app.use(express.urlencoded({ extended: true }));
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://localhost:5173",
+  "https://bestefar.no",
+  "https://bestefar-frontend.s3-website.eu-north-1.amazonaws.com",
+];
+
 app.use(
   cors({
-    origin: [
-      "https://localhost:5174", // Allow local development
-      "https://bestefar-frontend.s3-website.eu-north-1.amazonaws.com", // Allow S3 frontend
-      "https://bestefar.no/html-generator-app/#/",
-      "https://localhost:5173",
-      "https://bestefar.no",
-      "*",
-    ],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like Postman, curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      console.log("🚫 Blocked Origin:", origin);
+      return callback(new Error("CORS not allowed from this origin"));
+    },
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // Allow cookies and authentication headers
   })
 );
 
@@ -42,6 +52,7 @@ app.use("/api/music", musicRoutes);
 app.use("/api/audio", audioRoutes);
 app.use("/api/zip", zipRoutes);
 app.use("/api/s3", s3Routes);
+app.use("/html", express.static(path.join(__dirname, "html")));
 
 app.get("/", (req, res) => {
   res.send("Backend is running and accessible via Nginx!");
