@@ -109,7 +109,59 @@ const saveForm = async (req, res) => {
   }
 };
 
-module.exports = { saveForm };
+const getAllShows = async (req, res) => {
+  try {
+    const quizzes = await Quiz.find({});
+    const shows = quizzes.map((quiz) => {
+      const quizForms = [];
+
+      (quiz.screens || []).forEach((screen) => {
+        if (screen && typeof screen === "object") {
+          quizForms.push(screen);
+        }
+      });
+
+      return {
+        id: quiz._id.toString(),
+        quizName: quiz.quizName,
+        quizForms,
+      };
+    });
+
+    return res.status(200).json({ shows });
+  } catch (err) {
+    console.error("❌ Error fetching shows:", err);
+    return res.status(500).json({ error: "Failed to fetch shows" });
+  }
+};
+
+// Add to your formController.js
+const getShowById = async (req, res) => {
+  try {
+    const quiz = await Quiz.findById(req.params.id);
+    if (!quiz) {
+      return res.status(404).json({ error: "Show not found" });
+    }
+
+    const quizForms = [];
+    (quiz.screens || []).forEach((screen) => {
+      if (screen && typeof screen === "object") {
+        quizForms.push(screen);
+      }
+    });
+
+    return res.status(200).json({
+      id: quiz._id.toString(),
+      quizName: quiz.quizName,
+      quizForms,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching show:", err);
+    return res.status(500).json({ error: "Failed to fetch show" });
+  }
+};
+
+module.exports = { saveForm, getAllShows, getShowById };
 
 // const Form = require("../models/Form");
 // // const { writeFileSafe } = require("../utils/fileHandler");
