@@ -16,7 +16,7 @@ const generatePresignedUrl = async (key, contentType = "audio/mpeg") => {
       Key: key,
       Expires: 300,
       ContentType: contentType,
-      ACL: "public-read",
+      // ACL: "public-read",
     };
 
     return await s3.getSignedUrlPromise("putObject", params);
