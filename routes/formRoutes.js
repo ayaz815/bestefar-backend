@@ -3,6 +3,8 @@ const {
   saveForm,
   getAllShows,
   getShowById,
+  updateShow,
+  deleteShow,
 } = require("../controllers/formController");
 const multer = require("multer");
 
@@ -16,5 +18,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.post("/save-form", upload.none(), saveForm);
 router.get("/get-all", getAllShows);
 router.get("/get-show/:id", getShowById);
+router.put("/update-show/:id", updateShow);
+router.delete("/delete-show/:id", deleteShow);
 
 module.exports = router;
