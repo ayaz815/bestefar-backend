@@ -161,6 +161,7 @@ const getShowById = async (req, res) => {
 const updateShow = async (req, res) => {
   try {
     const showId = req.params.id;
+    console.log("Updating show with ID:", showId);
     const { quizName, quizForms } = req.body;
 
     if (!quizName || !Array.isArray(quizForms)) {
@@ -173,6 +174,7 @@ const updateShow = async (req, res) => {
       showId,
       {
         quizName,
+        // quizForms,
         quizForms,
       },
       { new: true }
