@@ -6,7 +6,7 @@ export const uploadMusic = async (req, res) => {
   try {
     const page = parseInt(req.params.page);
     const file = req.file;
-    const s3Url = req.body?.s3Url;
+    const s3Url = req.body?.publicUrl;
 
     if (!file) {
       console.warn("❗ No music file received in uploadMusic.");

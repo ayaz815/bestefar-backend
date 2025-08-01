@@ -35,6 +35,13 @@ const saveForm = async (req, res) => {
     // const jsonFilePath = "../../html/data/content/content.json";
     console.log("Resolved file path:", jsonFilePath);
 
+    // Ensure folder and file exist
+    fs.mkdirSync(path.dirname(jsonFilePath), { recursive: true });
+
+    if (!fs.existsSync(jsonFilePath)) {
+      fs.writeFileSync(jsonFilePath, JSON.stringify({}, null, 2), "utf8");
+    }
+
     // Force fresh read of JSON file (avoid caching)
     let jsonData = {};
     if (fs.existsSync(jsonFilePath)) {

@@ -45,8 +45,8 @@ const uploadAudio = async (req, res) => {
     jsonData[`screen${page}`].audioFile = audioFileName;
 
     // ✅ Optionally update S3 URL if passed
-    if (req.body.s3Url) {
-      jsonData[`screen${page}`].audioFileUrl = req.body.s3Url;
+    if (req.body.publicUrl) {
+      jsonData[`screen${page}`].audioFileUrl = req?.body?.publicUrl;
     }
 
     // ✅ Ensure JSON folder exists
