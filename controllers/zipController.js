@@ -53,7 +53,7 @@ const pipelineAsync = util.promisify(pipeline);
 const generateZip = async (req, res) => {
   try {
     const zip = new JSZip();
-    const htmlFolderPath = "/var/www/bestefar-html"; // Ensure this path is correct
+    const htmlFolderPath = "/var/www/bestefar-html";
 
     // Function to recursively add files to ZIP asynchronously
     const addFolderToZip = async (folderPath, zipFolder) => {
