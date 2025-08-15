@@ -14,9 +14,9 @@ const generatePresignedUrl = async (key, contentType = "audio/mpeg") => {
     const params = {
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: key,
-      Expires: 300,
+      // Expires: 300,
       ContentType: contentType,
-      ACL: "public-read",
+      // ACL: "public-read",
     };
 
     return await s3.getSignedUrlPromise("putObject", params);
@@ -32,12 +32,13 @@ const uploadToS3 = async (buffer, fileName) => {
     Key: fileName,
     Body: buffer,
     ContentType: "audio/mpeg",
-    ACL: "public-read",
+    // ACL: "public-read",
   };
 
   const result = await s3.upload(params).promise();
   return result.Location;
 };
+``;
 
 module.exports = {
   generatePresignedUrl,
