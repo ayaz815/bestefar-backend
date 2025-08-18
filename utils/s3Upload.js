@@ -9,16 +9,16 @@ const s3 = new AWS.S3({
   signatureVersion: "v4",
 });
 
+// Sign with RAW key; match ContentType; keep short expiry
 const generatePresignedUrl = async (key, contentType = "audio/mpeg") => {
   try {
     const params = {
       Bucket: process.env.AWS_BUCKET_NAME,
-      Key: key,
-      // Expires: 300,
-      ContentType: contentType,
-      // ACL: "public-read",
+      Key: key, // raw key (not encoded)
+      Expires: 300, // 5 minutes
+      ContentType: contentType, // must match client PUT header
+      // No ACL here
     };
-
     return await s3.getSignedUrlPromise("putObject", params);
   } catch (err) {
     console.error("Error generating pre-signed URL:", err);
@@ -26,21 +26,17 @@ const generatePresignedUrl = async (key, contentType = "audio/mpeg") => {
   }
 };
 
+// Optional direct upload helper (server-side)
 const uploadToS3 = async (buffer, fileName) => {
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME,
-    Key: fileName,
+    Key: fileName, // raw key
     Body: buffer,
     ContentType: "audio/mpeg",
-    // ACL: "public-read",
+    // No ACL
   };
-
   const result = await s3.upload(params).promise();
   return result.Location;
 };
-``;
 
-module.exports = {
-  generatePresignedUrl,
-  uploadToS3,
-};
+module.exports = { generatePresignedUrl, uploadToS3 };
