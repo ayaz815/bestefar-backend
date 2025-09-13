@@ -8,7 +8,7 @@ const connectDB = async () => {
       {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        dbName: "bestefar", // Ensures correct DB
+        dbName: "bestefar",
       }
     );
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
