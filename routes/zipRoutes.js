@@ -1,15 +1,9 @@
 const express = require("express");
-const {
-  sendIndexFile,
-  sendDataZip,
-} = require("../controllers/download.controller");
+const { generateZip } = require("../controllers/zipController");
 
 const router = express.Router();
 
-// Route to download index.html as a file
-router.get("/download/index", sendIndexFile);
-
-// Route to download data/ folder as a ZIP
-router.get("/download/data-zip", sendDataZip);
+// Route to download ZIP file
+router.get("/download-zip", generateZip);
 
 module.exports = router;
