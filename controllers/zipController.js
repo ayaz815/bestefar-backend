@@ -1,47 +1,4 @@
-// const JSZip = require("jszip");
-// const fs = require("fs");
-// const path = require("path");
-
-// const generateZip = async (req, res) => {
-//   try {
-//     const zip = new JSZip();
-//     // const htmlFolderPath = path.join(__dirname, "../../html");
-//     const htmlFolderPath = "/var/www/bestefar-html";
-
-//     // Function to recursively add files and folders to the ZIP
-//     const addFolderToZip = (folderPath, zipFolder) => {
-//       const items = fs.readdirSync(folderPath);
-//       items.forEach((item) => {
-//         const itemPath = path.join(folderPath, item);
-//         if (fs.statSync(itemPath).isDirectory()) {
-//           // Add subfolder
-//           addFolderToZip(itemPath, zipFolder.folder(item));
-//         } else {
-//           // Add file
-//           zipFolder.file(item, fs.readFileSync(itemPath));
-//         }
-//       });
-//     };
-
-//     // Add the `html` folder to the ZIP
-//     addFolderToZip(htmlFolderPath, zip);
-
-//     // Generate the ZIP file and send it as a response
-//     const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
-//     res.setHeader(
-//       "Content-Disposition",
-//       "attachment; filename=html_project.zip"
-//     );
-//     res.setHeader("Content-Type", "application/zip");
-//     res.send(zipBuffer);
-//   } catch (error) {
-//     console.error("Error generating ZIP file:", error);
-//     res.status(500).send("Failed to generate ZIP file.");
-//   }
-// };
-
-// module.exports = { generateZip };
-
+// controllers/zipController.js
 const JSZip = require("jszip");
 const fs = require("fs");
 const path = require("path");
@@ -50,50 +7,69 @@ const util = require("util");
 
 const pipelineAsync = util.promisify(pipeline);
 
-const generateZip = async (req, res) => {
+// Adjust if your html folder path differs
+const HTML_DIR = path.join(__dirname, "..", "html");
+const INDEX_PATH = path.join(HTML_DIR, "index.html");
+const DATA_DIR = path.join(HTML_DIR, "data");
+
+/** Download index.html RAW (not zipped) */
+const downloadIndexHtml = async (req, res) => {
   try {
+    await fs.promises.access(INDEX_PATH, fs.constants.R_OK);
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="index.html"');
+
+    const readStream = fs.createReadStream(INDEX_PATH);
+    readStream.on("error", (err) => {
+      console.error("index.html stream error:", err);
+      if (!res.headersSent) res.status(500).end("Failed to read index.html");
+    });
+    await pipelineAsync(readStream, res);
+  } catch (error) {
+    console.error("❌ downloadIndexHtml error:", error);
+    if (!res.headersSent) res.status(500).send("Failed to download index.html");
+  }
+};
+
+/** Recursively add a folder to a JSZip folder (sync FS for simplicity) */
+const addFolderToZip = (folderPath, zipFolder) => {
+  const entries = fs.readdirSync(folderPath);
+  entries.forEach((entry) => {
+    const full = path.join(folderPath, entry);
+    const stat = fs.statSync(full);
+    if (stat.isDirectory()) {
+      addFolderToZip(full, zipFolder.folder(entry));
+    } else {
+      zipFolder.file(entry, fs.readFileSync(full));
+    }
+  });
+};
+
+/** Download ONLY /html/data as data.zip */
+const downloadDataZip = async (req, res) => {
+  try {
+    await fs.promises.access(DATA_DIR, fs.constants.R_OK);
+
     const zip = new JSZip();
-    const htmlFolderPath = "/var/www/bestefar-html";
+    addFolderToZip(DATA_DIR, zip.folder("data"));
 
-    // Function to recursively add files to ZIP asynchronously
-    const addFolderToZip = async (folderPath, zipFolder) => {
-      const items = await fs.promises.readdir(folderPath);
-      for (const item of items) {
-        const itemPath = path.join(folderPath, item);
-        const stat = await fs.promises.stat(itemPath);
-        if (stat.isDirectory()) {
-          await addFolderToZip(itemPath, zipFolder.folder(item));
-        } else {
-          const fileData = await fs.promises.readFile(itemPath);
-          zipFolder.file(item, fileData);
-        }
-      }
-    };
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", 'attachment; filename="data.zip"');
 
-    // Add `html` folder to ZIP asynchronously
-    await addFolderToZip(htmlFolderPath, zip.folder("bestefar-html"));
-
-    // Generate ZIP as a stream
+    // Stream the zip to the response
     const zipStream = zip.generateNodeStream({
       type: "nodebuffer",
       streamFiles: true,
     });
-
-    // Set headers for ZIP download
-    res.setHeader(
-      "Content-Disposition",
-      'attachment; filename="bestefar-html.zip"'
-    );
-    res.setHeader("Content-Type", "application/zip");
-
-    // Pipe the ZIP stream to response properly
     await pipelineAsync(zipStream, res);
   } catch (error) {
-    console.error("❌ Error generating ZIP file:", error);
-    if (!res.headersSent) {
-      res.status(500).send("Failed to generate ZIP file.");
-    }
+    console.error("❌ downloadDataZip error:", error);
+    if (!res.headersSent) res.status(500).send("Failed to generate data.zip");
   }
 };
 
-module.exports = { generateZip };
+module.exports = {
+  downloadIndexHtml,
+  downloadDataZip,
+};
