@@ -12,6 +12,7 @@ const cors = require("cors");
 const compression = require("compression");
 const Quiz = require("./models/Form");
 const s3Routes = require("./routes/s3UploadRoute");
+const s3GetRouter = require("./routes/s3GetUrl");
 const { get } = require("http");
 const app = express();
 
@@ -53,6 +54,7 @@ app.use("/api/music", musicRoutes);
 app.use("/api/audio", audioRoutes);
 app.use("/api/zip", zipRoutes);
 app.use("/api/s3", s3Routes);
+app.use("/api/s3", s3GetRouter);
 app.use("/html", express.static(path.join(__dirname, "html")));
 
 app.get("/", (req, res) => {
