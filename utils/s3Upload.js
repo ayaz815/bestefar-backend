@@ -17,7 +17,6 @@ const generatePresignedUrl = async (key, contentType = "audio/mpeg") => {
       Key: key, // raw key (not encoded)
       Expires: 300, // 5 minutes
       ContentType: contentType, // must match client PUT header
-      // No ACL here
     };
     return await s3.getSignedUrlPromise("putObject", params);
   } catch (err) {
@@ -27,29 +26,28 @@ const generatePresignedUrl = async (key, contentType = "audio/mpeg") => {
 };
 
 // Optional direct upload helper (server-side)
-const uploadToS3 = async (buffer, fileName) => {
+const uploadToS3 = async (buffer, fileName, contentType = "audio/mpeg") => {
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: fileName, // raw key
     Body: buffer,
-    ContentType: "audio/mpeg",
-    // No ACL
+    ContentType: contentType,
   };
   const result = await s3.upload(params).promise();
   return result.Location;
 };
 
-// --- ADD: Presign GET (download) URLs for private playback ---
+// Presign GET (download) URLs for private playback
 const generatePresignedGetUrl = async (key, expiresSeconds = 300) => {
   try {
     const params = {
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: key, // raw key (no encode)
       Expires: expiresSeconds, // short-lived GET url
-      // You can hint the content-type response:
-      ResponseContentType: "audio/mpeg",
-      // Optional: force download vs. inline (we want inline):
-      // ResponseContentDisposition: 'inline'
+      // Detect content type from file extension
+      ResponseContentType: key.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+        ? "image/jpeg"
+        : "audio/mpeg",
     };
     return await s3.getSignedUrlPromise("getObject", params);
   } catch (err) {
