@@ -1,7 +1,3 @@
-const fs = require("fs");
-const path = require("path");
-const ImageQuiz = require("../models/ImageQuiz");
-
 const saveImageQuizForm = async (req, res) => {
   const {
     page,
@@ -33,61 +29,70 @@ const saveImageQuizForm = async (req, res) => {
 
     fs.mkdirSync(path.dirname(jsonFilePath), { recursive: true });
 
-    if (!fs.existsSync(jsonFilePath)) {
-      fs.writeFileSync(jsonFilePath, JSON.stringify({}, null, 2), "utf8");
+    // ✅ Determine array name based on imageQuestionType
+    let arrayName;
+    if (imageQuestionType === "bit-by-bit") {
+      arrayName = "bit";
+    } else if (imageQuestionType === "single-question") {
+      arrayName = "single";
+    } else if (imageQuestionType === "multiple-questions") {
+      arrayName = "multiple";
+    } else {
+      arrayName = "single"; // default fallback
     }
 
+    // ✅ Start with fresh object containing only the current type
     let jsonData = {};
+
+    // If file exists and has the SAME array type, load it
     if (fs.existsSync(jsonFilePath)) {
       const fileContent = fs.readFileSync(jsonFilePath, "utf8");
-      jsonData = JSON.parse(fileContent);
+      const existingData = JSON.parse(fileContent);
+
+      // Only keep existing data if it's the same array type
+      if (existingData[arrayName]) {
+        jsonData[arrayName] = existingData[arrayName];
+      }
     }
 
-    if (imageQuestionType === "bit-by-bit") {
-      if (!jsonData.bit) jsonData.bit = [];
-      while (jsonData.bit.length < 16) {
-        jsonData.bit.push({ question: "", image: "", audio: "", answer: "" });
-      }
-      jsonData.bit[page - 1] = {
-        question: question || "",
-        image: imageFileUrl || "",
-        audio: audioFileUrl || "",
-        answer: answer || "",
-      };
-    } else if (imageQuestionType === "single-question") {
-      if (!jsonData.single) jsonData.single = {};
-      jsonData.single[`screen${page}`] = {
-        quizName,
-        quizType: "image",
-        imageQuestionType: "single-question",
-        question: question || "",
-        answer: answer || "",
-        imageFileName: imageFileName || "",
-        imageFileUrl: imageFileUrl || "",
-        imageCaption: imageCaption || "",
-        audioFileName: audioFileName || "",
-        audioFileUrl: audioFileUrl || "",
-        additionalNotes: additionalNotes || "",
-      };
-    } else if (imageQuestionType === "multiple-questions") {
-      if (!jsonData.multiple) jsonData.multiple = {};
-      if (!jsonData.multiple[`screen${page}`]) {
-        jsonData.multiple[`screen${page}`] = {
-          quizName,
-          quizType: "image",
-          imageQuestionType: "multiple-questions",
-          imageFileName: imageFileName || "",
-          imageFileUrl: imageFileUrl || "",
-          imageCaption: imageCaption || "",
-          audioFileName: audioFileName || "",
-          audioFileUrl: audioFileUrl || "",
-          questions: [],
-        };
-      }
-      jsonData.multiple[`screen${page}`].questions = [
-        { question: question || "", answer: answer || "" },
-      ];
+    // ✅ Initialize the appropriate array
+    if (!jsonData[arrayName]) {
+      jsonData[arrayName] = [];
     }
+
+    // Ensure array has 16 slots
+    while (jsonData[arrayName].length < 16) {
+      jsonData[arrayName].push({
+        page: jsonData[arrayName].length + 1,
+        question: "",
+        answer: "",
+        imageFileName: "",
+        imageFileUrl: "",
+        imageCaption: "",
+        imageQuestionType: imageQuestionType || "single-question",
+        bitSize: "1",
+        selectedAnswer: "",
+        audioFileName: "",
+        audioFileUrl: "",
+        additionalNotes: "",
+      });
+    }
+
+    // ✅ Update with ALL fields from the schema
+    jsonData[arrayName][page - 1] = {
+      page: parseInt(page),
+      question: question || "",
+      answer: answer || "",
+      imageFileName: imageFileName || "",
+      imageFileUrl: imageFileUrl || "",
+      imageCaption: imageCaption || "",
+      imageQuestionType: imageQuestionType || "single-question",
+      bitSize: bitSize || "1",
+      selectedAnswer: selectedAnswer || "",
+      audioFileName: audioFileName || "",
+      audioFileUrl: audioFileUrl || "",
+      additionalNotes: additionalNotes || "",
+    };
 
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
 
@@ -150,151 +155,4 @@ const saveImageQuizForm = async (req, res) => {
       details: error.message,
     });
   }
-};
-
-const getAllImageQuizzes = async (req, res) => {
-  try {
-    const imageQuizzes = await ImageQuiz.find().sort({ createdAt: -1 });
-
-    const shows = imageQuizzes.map((quiz) => {
-      const mappedForms = (quiz.screens || []).map((screen) => {
-        const screenObj = screen.toObject ? screen.toObject() : screen;
-        return {
-          page: screenObj.page,
-          question: screenObj.question || "",
-          answer: screenObj.answer || "",
-          imageFileName: screenObj.imageFileName || "",
-          imageUrl: screenObj.imageFileUrl || "",
-          imageCaption: screenObj.imageCaption || "",
-          imageQuestionType: screenObj.imageQuestionType || "single-question",
-          bitSize: screenObj.bitSize || "1",
-          selectedAnswer: screenObj.selectedAnswer || "",
-          audioFileName: screenObj.audioFileName || "",
-          audioFileUrl: screenObj.audioFileUrl || "",
-          additionalNotes: screenObj.additionalNotes || "",
-          quizType: "image",
-        };
-      });
-
-      return {
-        id: quiz._id.toString(),
-        quizName: quiz.quizName,
-        quizType: "image",
-        quizForms: mappedForms,
-        numberOfScreens: quiz.screens?.length || 0,
-        createdAt: quiz.createdAt,
-        updatedAt: quiz.updatedAt,
-      };
-    });
-
-    return res.status(200).json({ shows });
-  } catch (err) {
-    console.error("❌ Error fetching image quizzes:", err);
-    return res.status(500).json({ error: "Failed to fetch image quizzes" });
-  }
-};
-
-const getImageQuizById = async (req, res) => {
-  try {
-    const imageQuiz = await ImageQuiz.findById(req.params.id);
-    if (!imageQuiz) {
-      return res.status(404).json({ error: "Image quiz not found" });
-    }
-
-    const quizForms = (imageQuiz.screens || []).map((screen) => {
-      const screenObj = screen.toObject ? screen.toObject() : screen;
-      return {
-        page: screenObj.page,
-        question: screenObj.question || "",
-        answer: screenObj.answer || "",
-        imageFileName: screenObj.imageFileName || "",
-        imageUrl: screenObj.imageFileUrl || "",
-        imageCaption: screenObj.imageCaption || "",
-        imageQuestionType: screenObj.imageQuestionType || "single-question",
-        bitSize: screenObj.bitSize || "1",
-        selectedAnswer: screenObj.selectedAnswer || "",
-        audioFileName: screenObj.audioFileName || "",
-        audioFileUrl: screenObj.audioFileUrl || "",
-        additionalNotes: screenObj.additionalNotes || "",
-        quizType: "image",
-      };
-    });
-
-    return res.status(200).json({
-      id: imageQuiz._id.toString(),
-      quizName: imageQuiz.quizName,
-      quizType: "image",
-      quizForms,
-    });
-  } catch (err) {
-    console.error("❌ Error fetching image quiz:", err);
-    return res.status(500).json({ error: "Failed to fetch image quiz" });
-  }
-};
-
-const updateImageQuiz = async (req, res) => {
-  try {
-    const { quizName, quizForms } = req.body;
-
-    if (!quizName || !Array.isArray(quizForms)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid payload" });
-    }
-
-    const updatedImageQuiz = await ImageQuiz.findByIdAndUpdate(
-      req.params.id,
-      { quizName, screens: quizForms },
-      { new: true }
-    );
-
-    if (!updatedImageQuiz) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Image quiz not found" });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Image quiz updated successfully.",
-      data: {
-        id: updatedImageQuiz._id,
-        quizName: updatedImageQuiz.quizName,
-        quizType: "image",
-        quizForms: updatedImageQuiz.screens,
-      },
-    });
-  } catch (err) {
-    console.error("Error in updateImageQuiz:", err);
-    return res.status(500).json({ success: false, message: "Update failed" });
-  }
-};
-
-const deleteImageQuiz = async (req, res) => {
-  try {
-    const result = await ImageQuiz.findByIdAndDelete(req.params.id);
-    if (!result) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Image quiz not found" });
-    }
-    res.json({
-      success: true,
-      message: "Image quiz deleted successfully",
-      data: result,
-    });
-  } catch (error) {
-    console.error("❌ Error deleting image quiz:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to delete image quiz" });
-  }
-};
-
-module.exports = {
-  saveImageQuizForm,
-  getAllImageQuizzes,
-  getImageQuizById,
-  updateImageQuiz,
-  deleteImageQuiz,
 };
