@@ -1,3 +1,7 @@
+const fs = require("fs");
+const path = require("path");
+const ImageQuiz = require("../models/ImageQuiz");
+
 const saveImageQuizForm = async (req, res) => {
   const {
     page,
@@ -155,4 +159,158 @@ const saveImageQuizForm = async (req, res) => {
       details: error.message,
     });
   }
+};
+
+const getAllImageQuizzes = async (req, res) => {
+  try {
+    const imageQuizzes = await ImageQuiz.find().sort({ createdAt: -1 });
+
+    console.log(
+      "📊 Sample screen from DB:",
+      JSON.stringify(imageQuizzes[0]?.screens[0], null, 2)
+    );
+
+    const shows = imageQuizzes.map((quiz) => ({
+      id: quiz._id.toString(),
+      quizName: quiz.quizName,
+      quizType: "image",
+      quizForms: (quiz.screens || []).map((screen) => ({
+        page: screen.page,
+        question: screen.question || "",
+        answer: screen.answer || "",
+        imageFileName: screen.imageFileName || "",
+        imageFileUrl: screen.imageFileUrl || "",
+        imageCaption: screen.imageCaption || "",
+        imageQuestionType: screen.imageQuestionType || "single-question",
+        bitSize: screen.bitSize || "1",
+        selectedAnswer: screen.selectedAnswer || "",
+        audioFileName: screen.audioFileName || "",
+        audioFileUrl: screen.audioFileUrl || "",
+        additionalNotes: screen.additionalNotes || "",
+        quizType: "image",
+      })),
+      numberOfScreens: quiz.screens?.length || 0,
+      createdAt: quiz.createdAt,
+      updatedAt: quiz.updatedAt,
+    }));
+
+    console.log(`✅ Fetched ${shows.length} image quizzes`);
+    return res.status(200).json({ shows });
+  } catch (err) {
+    console.error("❌ Error fetching image quizzes:", err);
+    return res.status(500).json({ error: "Failed to fetch image quizzes" });
+  }
+};
+
+const getImageQuizById = async (req, res) => {
+  try {
+    const imageQuiz = await ImageQuiz.findById(req.params.id);
+    if (!imageQuiz) {
+      return res.status(404).json({ error: "Image quiz not found" });
+    }
+
+    console.log(
+      "📊 Quiz by ID from DB:",
+      JSON.stringify(imageQuiz.screens[0], null, 2)
+    );
+
+    const quizForms = (imageQuiz.screens || []).map((screen) => ({
+      page: screen.page,
+      question: screen.question || "",
+      answer: screen.answer || "",
+      imageFileName: screen.imageFileName || "",
+      imageFileUrl: screen.imageFileUrl || "",
+      imageCaption: screen.imageCaption || "",
+      imageQuestionType: screen.imageQuestionType || "single-question",
+      bitSize: screen.bitSize || "1",
+      selectedAnswer: screen.selectedAnswer || "",
+      audioFileName: screen.audioFileName || "",
+      audioFileUrl: screen.audioFileUrl || "",
+      additionalNotes: screen.additionalNotes || "",
+      quizType: "image",
+    }));
+
+    console.log(`✅ Fetched quiz by ID with ${quizForms.length} screens`);
+    return res.status(200).json({
+      id: imageQuiz._id.toString(),
+      quizName: imageQuiz.quizName,
+      quizType: "image",
+      quizForms,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching image quiz:", err);
+    return res.status(500).json({ error: "Failed to fetch image quiz" });
+  }
+};
+
+const updateImageQuiz = async (req, res) => {
+  try {
+    const showId = req.params.id;
+    console.log("Updating image quiz with ID:", showId);
+    const { quizName, quizForms } = req.body;
+
+    if (!quizName || !Array.isArray(quizForms)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid payload" });
+    }
+
+    const updatedImageQuiz = await ImageQuiz.findByIdAndUpdate(
+      showId,
+      {
+        quizName,
+        screens: quizForms,
+      },
+      { new: true }
+    );
+
+    if (!updatedImageQuiz) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Image quiz not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Image quiz updated successfully.",
+      data: {
+        id: updatedImageQuiz._id,
+        quizName: updatedImageQuiz.quizName,
+        quizType: "image",
+        quizForms: updatedImageQuiz.screens,
+      },
+    });
+  } catch (err) {
+    console.error("Error in updateImageQuiz:", err);
+    return res.status(500).json({ success: false, message: "Update failed" });
+  }
+};
+
+const deleteImageQuiz = async (req, res) => {
+  try {
+    const result = await ImageQuiz.findByIdAndDelete(req.params.id);
+    if (!result) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Image quiz not found" });
+    }
+    res.json({
+      success: true,
+      message: "Image quiz deleted successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("❌ Error deleting image quiz:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to delete image quiz" });
+  }
+};
+
+module.exports = {
+  saveImageQuizForm,
+  getAllImageQuizzes,
+  getImageQuizById,
+  updateImageQuiz,
+  deleteImageQuiz,
 };
