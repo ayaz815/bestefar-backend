@@ -64,41 +64,72 @@ const saveImageQuizForm = async (req, res) => {
       jsonData[arrayName] = [];
     }
 
-    // Ensure array has 16 slots
+    // Ensure array has 16 slots with minimal structure based on quiz type
     while (jsonData[arrayName].length < 16) {
-      jsonData[arrayName].push({
-        page: jsonData[arrayName].length + 1,
-        question: "",
-        answer: "",
-        imageFileName: "",
-        imageFileUrl: "",
-        imageCaption: "",
-        imageQuestionType: imageQuestionType || "single-question",
-        bitSize: "1",
-        selectedAnswer: "",
-        audioFileName: "",
-        audioFileUrl: "",
-        additionalNotes: "",
-      });
+      if (arrayName === "bit") {
+        // Bit-by-bit includes answer field
+        jsonData[arrayName].push({
+          question: "",
+          image: "",
+          audio: "",
+          answer: "",
+        });
+      } else if (arrayName === "single") {
+        // Single question does NOT include answer in JSON
+        jsonData[arrayName].push({
+          question: "",
+          image: "",
+          audio: "",
+        });
+      } else if (arrayName === "multiple") {
+        // Multiple questions includes choices array
+        jsonData[arrayName].push({
+          question: "",
+          image: "",
+          audio: "",
+          choices: [],
+        });
+      }
     }
 
-    // ✅ Update with ALL fields from the schema
-    jsonData[arrayName][page - 1] = {
-      page: parseInt(page),
-      question: question || "",
-      answer: answer || "",
-      imageFileName: imageFileName || "",
-      imageFileUrl: imageFileUrl || "",
-      imageCaption: imageCaption || "",
-      imageQuestionType: imageQuestionType || "single-question",
-      bitSize: bitSize || "1",
-      selectedAnswer: selectedAnswer || "",
-      audioFileName: audioFileName || "",
-      audioFileUrl: audioFileUrl || "",
-      additionalNotes: additionalNotes || "",
-    };
+    // ✅ Update ONLY the fields needed for HTML quiz (minimal structure)
+    let pageData = {};
+
+    if (arrayName === "bit") {
+      // Bit-by-bit: question, image, audio, answer
+      pageData = {
+        question: question || "",
+        image: imageFileUrl || "",
+        audio: audioFileUrl || "",
+        answer: answer || "",
+      };
+    } else if (arrayName === "single") {
+      // Single question: question, image, audio (NO answer in JSON)
+      pageData = {
+        question: question || "",
+        image: imageFileUrl || "",
+        audio: audioFileUrl || "",
+      };
+    } else if (arrayName === "multiple") {
+      // Multiple questions: question, image, audio, choices
+      pageData = {
+        question: question || "",
+        image: imageFileUrl || "",
+        audio: audioFileUrl || "",
+        choices: selectedAnswer
+          ? selectedAnswer.split(",").map((c) => c.trim())
+          : [],
+      };
+    }
+
+    jsonData[arrayName][page - 1] = pageData;
 
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
+
+    console.log(
+      `✅ Image quiz JSON updated for ${arrayName}[${page - 1}]:`,
+      JSON.stringify(pageData, null, 2)
+    );
 
     const pageNumber = parseInt(page);
 
