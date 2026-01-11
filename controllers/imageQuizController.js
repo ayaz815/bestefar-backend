@@ -66,55 +66,68 @@ const saveImageQuizForm = async (req, res) => {
 
     // Ensure array has 16 slots
     while (jsonData[arrayName].length < 16) {
-      jsonData[arrayName].push({
-        page: jsonData[arrayName].length + 1,
-        question: "",
-        answer: "",
-        image: "",
-        audio: "",
-        imageFileName: "",
-        imageCaption: "",
-        bitSize: "1",
-        selectedAnswer: "",
-        additionalNotes: "",
-        ...(arrayName === "multiple" && { choices: [] }),
-      });
+      if (arrayName === "bit") {
+        jsonData[arrayName].push({
+          question: "",
+          image: "",
+          audio: "",
+          answer: "",
+        });
+      } else if (arrayName === "single") {
+        jsonData[arrayName].push({
+          question: "",
+          image: "",
+          audio: "",
+        });
+      } else if (arrayName === "multiple") {
+        jsonData[arrayName].push({
+          question: "",
+          image: "",
+          audio: "",
+          choices: [],
+        });
+      }
     }
 
-    // ✅ Build the data object based on quiz type
-    const pageData = {
-      page: parseInt(page),
-      question: question || "",
-      image: imageFileUrl || "", // Maps to 'image' field in JSON
-      audio: audioFileUrl || "", // Maps to 'audio' field in JSON
-      imageFileName: imageFileName || "",
-      imageCaption: imageCaption || "",
-      bitSize: bitSize || "1",
-      selectedAnswer: selectedAnswer || "",
-      additionalNotes: additionalNotes || "",
-    };
+    // ✅ Build the data object based on quiz type - ONLY fields needed for HTML
+    let pageData = {};
 
-    // Add answer field for single-question and bit-by-bit
-    if (arrayName === "single" || arrayName === "bit") {
-      pageData.answer = answer || "";
+    if (arrayName === "bit") {
+      // Bit-by-bit: question, image, audio, answer
+      pageData = {
+        question: question || "",
+        image: imageFileUrl || "",
+        audio: audioFileUrl || "",
+        answer: answer || "",
+      };
+    } else if (arrayName === "single") {
+      // Single question: question, image, audio (NO answer in JSON)
+      pageData = {
+        question: question || "",
+        image: imageFileUrl || "",
+        audio: audioFileUrl || "",
+      };
+    } else if (arrayName === "multiple") {
+      // Multiple questions: question, image, audio, choices
+      pageData = {
+        question: question || "",
+        image: imageFileUrl || "",
+        audio: audioFileUrl || "",
+        choices: selectedAnswer
+          ? selectedAnswer.split(",").map((c) => c.trim())
+          : [],
+      };
     }
 
-    // Add choices array for multiple-questions
-    if (arrayName === "multiple") {
-      // Parse choices from selectedAnswer or create empty array
-      pageData.choices = selectedAnswer
-        ? selectedAnswer.split(",").map((c) => c.trim())
-        : [];
-      // For multiple choice, the answer is the selected option
-      pageData.answer = answer || "";
-    }
-
-    // ✅ Update the specific page
+    // ✅ Update the specific page (page is 1-indexed, array is 0-indexed)
     jsonData[arrayName][page - 1] = pageData;
 
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
 
-    console.log(`✅ Image quiz JSON updated for ${arrayName}[${page - 1}]`);
+    console.log(
+      `✅ Image quiz JSON updated for ${arrayName}[${page - 1}]:`,
+      pageData
+    );
 
     const pageNumber = parseInt(page);
 
