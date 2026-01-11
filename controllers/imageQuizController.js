@@ -70,35 +70,51 @@ const saveImageQuizForm = async (req, res) => {
         page: jsonData[arrayName].length + 1,
         question: "",
         answer: "",
+        image: "",
+        audio: "",
         imageFileName: "",
-        imageFileUrl: "",
         imageCaption: "",
-        imageQuestionType: imageQuestionType || "single-question",
         bitSize: "1",
         selectedAnswer: "",
-        audioFileName: "",
-        audioFileUrl: "",
         additionalNotes: "",
+        ...(arrayName === "multiple" && { choices: [] }),
       });
     }
 
-    // ✅ Update with ALL fields from the schema
-    jsonData[arrayName][page - 1] = {
+    // ✅ Build the data object based on quiz type
+    const pageData = {
       page: parseInt(page),
       question: question || "",
-      answer: answer || "",
+      image: imageFileUrl || "", // Maps to 'image' field in JSON
+      audio: audioFileUrl || "", // Maps to 'audio' field in JSON
       imageFileName: imageFileName || "",
-      imageFileUrl: imageFileUrl || "",
       imageCaption: imageCaption || "",
-      imageQuestionType: imageQuestionType || "single-question",
       bitSize: bitSize || "1",
       selectedAnswer: selectedAnswer || "",
-      audioFileName: audioFileName || "",
-      audioFileUrl: audioFileUrl || "",
       additionalNotes: additionalNotes || "",
     };
 
+    // Add answer field for single-question and bit-by-bit
+    if (arrayName === "single" || arrayName === "bit") {
+      pageData.answer = answer || "";
+    }
+
+    // Add choices array for multiple-questions
+    if (arrayName === "multiple") {
+      // Parse choices from selectedAnswer or create empty array
+      pageData.choices = selectedAnswer
+        ? selectedAnswer.split(",").map((c) => c.trim())
+        : [];
+      // For multiple choice, the answer is the selected option
+      pageData.answer = answer || "";
+    }
+
+    // ✅ Update the specific page
+    jsonData[arrayName][page - 1] = pageData;
+
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
+
+    console.log(`✅ Image quiz JSON updated for ${arrayName}[${page - 1}]`);
 
     const pageNumber = parseInt(page);
 
