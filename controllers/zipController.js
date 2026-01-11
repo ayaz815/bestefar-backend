@@ -8,8 +8,30 @@ const pipelineAsync = util.promisify(pipeline);
 
 const generateZip = async (req, res) => {
   try {
+    const { quizType } = req.query; // Get quiz type from query parameter
+
     const zip = new JSZip();
-    const htmlFolderPath = "/var/www/bestefar-html";
+
+    // Determine HTML folder path based on quiz type
+    const htmlFolderPath =
+      quizType === "image"
+        ? "/var/www/bestefar-html2" // Image quiz HTML folder
+        : "/var/www/bestefar-html"; // Audio quiz HTML folder
+
+    console.log(
+      `📦 Generating ZIP for ${
+        quizType || "audio"
+      } quiz from: ${htmlFolderPath}`
+    );
+
+    // Check if folder exists
+    if (!fs.existsSync(htmlFolderPath)) {
+      console.error(`❌ Folder not found: ${htmlFolderPath}`);
+      return res.status(404).json({
+        error: `HTML folder not found for ${quizType || "audio"} quiz`,
+        path: htmlFolderPath,
+      });
+    }
 
     // Function to recursively add files to ZIP asynchronously
     const addFolderToZip = async (folderPath, zipFolder) => {
@@ -26,8 +48,10 @@ const generateZip = async (req, res) => {
       }
     };
 
-    // Add `html` folder to ZIP asynchronously
-    await addFolderToZip(htmlFolderPath, zip.folder("bestefar-html"));
+    // Add folder to ZIP with appropriate name
+    const folderName =
+      quizType === "image" ? "bestefar-html2" : "bestefar-html";
+    await addFolderToZip(htmlFolderPath, zip.folder(folderName));
 
     // Generate ZIP as a stream
     const zipStream = zip.generateNodeStream({
@@ -35,19 +59,29 @@ const generateZip = async (req, res) => {
       streamFiles: true,
     });
 
-    // Set headers for ZIP download
+    // Set headers for ZIP download with appropriate filename
+    const zipFileName =
+      quizType === "image"
+        ? "bestefar-image-quiz.zip"
+        : "bestefar-audio-quiz.zip";
+
     res.setHeader(
       "Content-Disposition",
-      'attachment; filename="bestefar-html.zip"'
+      `attachment; filename="${zipFileName}"`
     );
     res.setHeader("Content-Type", "application/zip");
+
+    console.log(`✅ Sending ${zipFileName} to client`);
 
     // Pipe the ZIP stream to response properly
     await pipelineAsync(zipStream, res);
   } catch (error) {
     console.error("❌ Error generating ZIP file:", error);
     if (!res.headersSent) {
-      res.status(500).send("Failed to generate ZIP file.");
+      res.status(500).json({
+        error: "Failed to generate ZIP file",
+        details: error.message,
+      });
     }
   }
 };
