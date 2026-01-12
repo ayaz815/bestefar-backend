@@ -92,6 +92,18 @@ const saveImageQuizForm = async (req, res) => {
       }
     }
 
+    const pageNumber = parseInt(page);
+
+    // ✅ Check if quiz already exists and get existing screen data FIRST
+    let existingImageQuiz = await ImageQuiz.findOne({ quizName });
+    let existingScreen = null;
+
+    if (existingImageQuiz) {
+      existingScreen = existingImageQuiz.screens.find(
+        (s) => s.page === pageNumber
+      );
+    }
+
     // ✅ Update ONLY the fields needed for HTML quiz (minimal structure)
     let pageData = {};
 
@@ -99,23 +111,23 @@ const saveImageQuizForm = async (req, res) => {
       // Bit-by-bit: question, image, audio, answer
       pageData = {
         question: question || "",
-        image: imageFileUrl || "",
-        audio: audioFileUrl || "",
+        image: imageFileUrl || existingScreen?.imageFileUrl || "",
+        audio: audioFileUrl || existingScreen?.audioFileUrl || "",
         answer: answer || "",
       };
     } else if (arrayName === "single") {
       // Single question: question, image, audio (NO answer in JSON)
       pageData = {
         question: question || "",
-        image: imageFileUrl || "",
-        audio: audioFileUrl || "",
+        image: imageFileUrl || existingScreen?.imageFileUrl || "",
+        audio: audioFileUrl || existingScreen?.audioFileUrl || "",
       };
     } else if (arrayName === "multiple") {
       // Multiple questions: question, image, audio, choices
       pageData = {
         question: question || "",
-        image: imageFileUrl || "",
-        audio: audioFileUrl || "",
+        image: imageFileUrl || existingScreen?.imageFileUrl || "",
+        audio: audioFileUrl || existingScreen?.audioFileUrl || "",
         choices: selectedAnswer
           ? selectedAnswer.split(",").map((c) => c.trim())
           : [],
@@ -131,24 +143,29 @@ const saveImageQuizForm = async (req, res) => {
       JSON.stringify(pageData, null, 2)
     );
 
-    const pageNumber = parseInt(page);
-
+    // ✅ Now build screenData for MongoDB (existingScreen already fetched above)
     const screenData = {
       page: pageNumber,
       question: question || "",
       answer: answer || "",
-      imageFileName: imageFileName || "",
-      imageFileUrl: imageFileUrl || "",
-      imageCaption: imageCaption || "",
+      imageFileName: imageFileName || existingScreen?.imageFileName || "",
+      imageFileUrl: imageFileUrl || existingScreen?.imageFileUrl || "", // ✅ Preserve existing URL if not provided
+      imageCaption: imageCaption || existingScreen?.imageCaption || "",
       imageQuestionType: imageQuestionType || "single-question",
       bitSize: bitSize || "1",
-      selectedAnswer: selectedAnswer || "",
-      audioFileName: audioFileName || "",
-      audioFileUrl: audioFileUrl || "",
-      additionalNotes: additionalNotes || "",
+      selectedAnswer: selectedAnswer || existingScreen?.selectedAnswer || "",
+      audioFileName: audioFileName || existingScreen?.audioFileName || "",
+      audioFileUrl: audioFileUrl || existingScreen?.audioFileUrl || "", // ✅ Preserve existing audio URL if not provided
+      additionalNotes: additionalNotes || existingScreen?.additionalNotes || "",
     };
 
-    let imageQuiz = await ImageQuiz.findOne({ quizName });
+    console.log("💾 Screen data to save:", JSON.stringify(screenData, null, 2));
+    console.log(
+      "🔍 Existing screen data:",
+      JSON.stringify(existingScreen, null, 2)
+    );
+
+    let imageQuiz = existingImageQuiz;
 
     if (imageQuiz) {
       const screenIndex = imageQuiz.screens.findIndex(
@@ -210,7 +227,7 @@ const getAllImageQuizzes = async (req, res) => {
         question: screen.question || "",
         answer: screen.answer || "",
         imageFileName: screen.imageFileName || "",
-        imageFileUrl: screen.imageFileUrl || "",
+        imageUrl: screen.imageFileUrl || "",
         imageCaption: screen.imageCaption || "",
         imageQuestionType: screen.imageQuestionType || "single-question",
         bitSize: screen.bitSize || "1",
