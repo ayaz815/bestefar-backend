@@ -4,6 +4,7 @@ const connectDB = require("./config/db");
 const formRoutes = require("./routes/formRoutes");
 const imageRoutes = require("./routes/imageRoutes");
 const imageQuizRoutes = require("./routes/imageQuizRoutes");
+const audioQuizRoutes = require("./routes/audioQuizRoutes");
 const musicRoutes = require("./routes/musicRoutes");
 const audioRoutes = require("./routes/audioRoutes");
 const zipRoutes = require("./routes/zipRoutes");
@@ -27,8 +28,8 @@ app.use(compression());
 app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
-  "http://localhost:5173",
-  "https://localhost:5173",
+  "http://localhost:5174",
+  "https://localhost:5174",
   "https://bestefar.no",
   "https://bestefar-frontend.s3-website.eu-north-1.amazonaws.com",
 ];
@@ -54,6 +55,7 @@ app.use(
 app.use("/api/forms", formRoutes);
 app.use("/api/image", imageRoutes);
 app.use("/api/image-quiz", imageQuizRoutes);
+app.use("/api/audio-quiz", audioQuizRoutes);
 app.use("/api/music", musicRoutes);
 app.use("/api/audio", audioRoutes);
 app.use("/api/zip", zipRoutes);

@@ -5,8 +5,12 @@ const ImageScreenSchema = new mongoose.Schema(
     page: { type: Number, required: true, min: 1, max: 16 },
     question: { type: String, trim: true },
     answer: { type: String, trim: true },
-    imageFileName: { type: String, trim: true },
-    imageFileUrl: { type: String, trim: true },
+
+    // ✅ UNIFIED media fields (handles both image and video)
+    mediaFileName: { type: String, trim: true },
+    mediaFileUrl: { type: String, trim: true },
+    mediaType: { type: String, enum: ["image", "video"], default: "image" },
+
     imageCaption: { type: String, trim: true },
     imageQuestionType: {
       type: String,

@@ -8,8 +8,9 @@ const saveImageQuizForm = async (req, res) => {
     quizName,
     question,
     answer,
-    imageFileName,
-    imageFileUrl,
+    mediaFileName,
+    mediaFileUrl,
+    mediaType,
     imageCaption,
     imageQuestionType,
     bitSize,
@@ -70,7 +71,7 @@ const saveImageQuizForm = async (req, res) => {
         // Bit-by-bit includes answer field
         jsonData[arrayName].push({
           question: "",
-          image: "",
+          media: "",
           audio: "",
           answer: "",
         });
@@ -78,14 +79,14 @@ const saveImageQuizForm = async (req, res) => {
         // Single question does NOT include answer in JSON
         jsonData[arrayName].push({
           question: "",
-          image: "",
+          media: "",
           audio: "",
         });
       } else if (arrayName === "multiple") {
         // Multiple questions includes choices array
         jsonData[arrayName].push({
           question: "",
-          image: "",
+          media: "",
           audio: "",
           choices: [],
         });
@@ -107,26 +108,29 @@ const saveImageQuizForm = async (req, res) => {
     // ✅ Update ONLY the fields needed for HTML quiz (minimal structure)
     let pageData = {};
 
+    // Use unified media URL
+    const mediaUrl = mediaFileUrl || existingScreen?.mediaFileUrl || "";
+
     if (arrayName === "bit") {
-      // Bit-by-bit: question, image, audio, answer
+      // Bit-by-bit: question, media, audio, answer
       pageData = {
         question: question || "",
-        image: imageFileUrl || existingScreen?.imageFileUrl || "",
+        media: mediaUrl,
         audio: audioFileUrl || existingScreen?.audioFileUrl || "",
         answer: answer || "",
       };
     } else if (arrayName === "single") {
-      // Single question: question, image, audio (NO answer in JSON)
+      // Single question: question, media, audio (NO answer in JSON)
       pageData = {
         question: question || "",
-        image: imageFileUrl || existingScreen?.imageFileUrl || "",
+        media: mediaUrl,
         audio: audioFileUrl || existingScreen?.audioFileUrl || "",
       };
     } else if (arrayName === "multiple") {
-      // Multiple questions: question, image, audio, choices
+      // Multiple questions: question, media, audio, choices
       pageData = {
         question: question || "",
-        image: imageFileUrl || existingScreen?.imageFileUrl || "",
+        media: mediaUrl,
         audio: audioFileUrl || existingScreen?.audioFileUrl || "",
         choices: selectedAnswer
           ? selectedAnswer.split(",").map((c) => c.trim())
@@ -148,14 +152,15 @@ const saveImageQuizForm = async (req, res) => {
       page: pageNumber,
       question: question || "",
       answer: answer || "",
-      imageFileName: imageFileName || existingScreen?.imageFileName || "",
-      imageFileUrl: imageFileUrl || existingScreen?.imageFileUrl || "", // ✅ Preserve existing URL if not provided
+      mediaFileName: mediaFileName || existingScreen?.mediaFileName || "",
+      mediaFileUrl: mediaFileUrl || existingScreen?.mediaFileUrl || "",
+      mediaType: mediaType || existingScreen?.mediaType || "image",
       imageCaption: imageCaption || existingScreen?.imageCaption || "",
       imageQuestionType: imageQuestionType || "single-question",
       bitSize: bitSize || "1",
       selectedAnswer: selectedAnswer || existingScreen?.selectedAnswer || "",
       audioFileName: audioFileName || existingScreen?.audioFileName || "",
-      audioFileUrl: audioFileUrl || existingScreen?.audioFileUrl || "", // ✅ Preserve existing audio URL if not provided
+      audioFileUrl: audioFileUrl || existingScreen?.audioFileUrl || "",
       additionalNotes: additionalNotes || existingScreen?.additionalNotes || "",
     };
 
@@ -226,8 +231,9 @@ const getAllImageQuizzes = async (req, res) => {
         page: screen.page,
         question: screen.question || "",
         answer: screen.answer || "",
-        imageFileName: screen.imageFileName || "",
-        imageUrl: screen.imageFileUrl || "",
+        mediaFileName: screen.mediaFileName || "",
+        mediaFileUrl: screen.mediaFileUrl || "",
+        mediaType: screen.mediaType || "image",
         imageCaption: screen.imageCaption || "",
         imageQuestionType: screen.imageQuestionType || "single-question",
         bitSize: screen.bitSize || "1",
@@ -266,8 +272,9 @@ const getImageQuizById = async (req, res) => {
       page: screen.page,
       question: screen.question || "",
       answer: screen.answer || "",
-      imageFileName: screen.imageFileName || "",
-      imageFileUrl: screen.imageFileUrl || "",
+      mediaFileName: screen.mediaFileName || "",
+      mediaFileUrl: screen.mediaFileUrl || "",
+      mediaType: screen.mediaType || "image",
       imageCaption: screen.imageCaption || "",
       imageQuestionType: screen.imageQuestionType || "single-question",
       bitSize: screen.bitSize || "1",
@@ -283,7 +290,7 @@ const getImageQuizById = async (req, res) => {
       id: imageQuiz._id.toString(),
       quizName: imageQuiz.quizName,
       quizType: "image",
-      quizForms,
+      screens: quizForms,
     });
   } catch (err) {
     console.error("❌ Error fetching image quiz:", err);

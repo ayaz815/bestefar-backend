@@ -29,7 +29,9 @@ router.get("/test", (req, res) => {
   });
 });
 
-// Routes for image quiz CRUD operations
+// ✅ These routes work perfectly with the unified media system
+// They receive mediaFileName, mediaFileUrl, and mediaType from the frontend
+// No changes needed here!
 router.post("/save-image-quiz-form", upload.none(), saveImageQuizForm);
 router.get("/get-all-image-quizzes", getAllImageQuizzes);
 router.get("/get-image-quiz/:id", getImageQuizById);

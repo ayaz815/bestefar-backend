@@ -1,15 +1,15 @@
 const fs = require("fs").promises;
 const path = require("path");
 
-const uploadImage = async (req, res) => {
-  console.log("🎯 uploadImage/Video route hit");
+const uploadMedia = async (req, res) => {
+  console.log("🎯 uploadMedia route hit");
   try {
     const page = parseInt(req.params.page);
     const file = req.file;
     const s3Url = req.body?.publicUrl;
 
     if (!file) {
-      console.warn("❗ No file received in uploadImage.");
+      console.warn("❗ No file received in uploadMedia.");
       return res.status(400).json({ error: "No file uploaded." });
     }
 
@@ -28,11 +28,11 @@ const uploadImage = async (req, res) => {
 
     // Determine file extension from mimetype
     const ext = file.mimetype.split("/")[1]; // e.g., "jpeg", "png", "webp", "mp4", "webm"
-    const fileType = isVideo ? "video" : "image";
-    const fileName = `${fileType}${page}.${ext}`;
+    const mediaType = isVideo ? "video" : "image";
+    const fileName = `media${page}.${ext}`;
 
-    // Store in appropriate folder
-    const folderName = isVideo ? "videoFiles" : "imageFiles";
+    // ✅ Store all media in unified folder
+    const folderName = "mediaFiles";
     const filePath = isDev
       ? path.join(process.cwd(), `html/data/${folderName}`, fileName)
       : `/var/www/bestefar-html/data/${folderName}/${fileName}`;
@@ -41,9 +41,9 @@ const uploadImage = async (req, res) => {
       ? path.resolve(process.cwd(), "html/data/content/content.json")
       : "/var/www/bestefar-html/data/content/content.json";
 
-    console.log(`📥 Uploading ${fileType} file to: ${filePath}`);
+    console.log(`📥 Uploading ${mediaType} file to: ${filePath}`);
 
-    // ✅ Save file locally (image or video)
+    // ✅ Save file locally
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, file.buffer);
 
@@ -60,23 +60,14 @@ const uploadImage = async (req, res) => {
       jsonData[`screen${page}`] = {};
     }
 
-    // ✅ Update local file reference based on type
-    if (isVideo) {
-      jsonData[`screen${page}`].videoFile = fileName;
-      jsonData[`screen${page}`].mediaType = "video";
-    } else {
-      jsonData[`screen${page}`].imageFile = fileName;
-      jsonData[`screen${page}`].mediaType = "image";
-    }
+    // ✅ Update unified media fields
+    jsonData[`screen${page}`].mediaFile = fileName;
+    jsonData[`screen${page}`].mediaType = mediaType;
 
     // ✅ Update file URL if S3 URL provided
     if (s3Url) {
       console.log(`🌐 S3 URL received: ${s3Url}`);
-      if (isVideo) {
-        jsonData[`screen${page}`].videoFileUrl = s3Url;
-      } else {
-        jsonData[`screen${page}`].imageFileUrl = s3Url;
-      }
+      jsonData[`screen${page}`].mediaFileUrl = s3Url;
     } else {
       console.log("ℹ️ No S3 URL provided, skipping URL update.");
     }
@@ -86,26 +77,27 @@ const uploadImage = async (req, res) => {
     await fs.writeFile(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
 
     console.log(`✅ JSON updated for screen${page}:`, {
-      [isVideo ? "videoFile" : "imageFile"]: fileName,
-      [isVideo ? "videoFileUrl" : "imageFileUrl"]: s3Url || "local",
-      mediaType: isVideo ? "video" : "image",
+      mediaFile: fileName,
+      mediaFileUrl: s3Url || "local",
+      mediaType: mediaType,
     });
 
     res.status(200).json({
       success: true,
-      fileType: fileType,
+      mediaType: mediaType,
       fileUrl: s3Url || `local://${fileName}`,
+      fileName: fileName,
       updatedScreen: `screen${page}`,
       updatedFields: {
-        [isVideo ? "videoFile" : "imageFile"]: fileName,
-        mediaType: isVideo ? "video" : "image",
-        ...(s3Url && { [isVideo ? "videoFileUrl" : "imageFileUrl"]: s3Url }),
+        mediaFile: fileName,
+        mediaType: mediaType,
+        ...(s3Url && { mediaFileUrl: s3Url }),
       },
     });
   } catch (err) {
-    console.error("❌ uploadImage error:", err);
-    res.status(500).json({ error: "Failed to upload image file." });
+    console.error("❌ uploadMedia error:", err);
+    res.status(500).json({ error: "Failed to upload media file." });
   }
 };
 
-module.exports = { uploadImage };
+module.exports = { uploadMedia };
