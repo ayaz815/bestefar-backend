@@ -22,6 +22,7 @@ const ImageScreenSchema = new mongoose.Schema(
       enum: ["1", "2", "3"],
       default: "1",
     },
+    bitRemovalDuration: { type: String, default: "3" },
     selectedAnswer: { type: String, trim: true },
     audioFileName: { type: String, trim: true },
     audioFileUrl: { type: String, trim: true },
