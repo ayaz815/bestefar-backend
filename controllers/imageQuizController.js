@@ -19,6 +19,9 @@ const saveImageQuizForm = async (req, res) => {
     audioFileName,
     audioFileUrl,
     additionalNotes,
+    optionA,
+    optionB,
+    optionC,
   } = req.body;
 
   if (!page || !quizName) {
@@ -69,7 +72,6 @@ const saveImageQuizForm = async (req, res) => {
     // Ensure array has 16 slots with minimal structure based on quiz type
     while (jsonData[arrayName].length < 16) {
       if (arrayName === "bit") {
-        // Bit-by-bit includes answer field
         jsonData[arrayName].push({
           question: "",
           media: "",
@@ -77,14 +79,12 @@ const saveImageQuizForm = async (req, res) => {
           answer: "",
         });
       } else if (arrayName === "single") {
-        // Single question does NOT include answer in JSON
         jsonData[arrayName].push({
           question: "",
           media: "",
           audio: "",
         });
       } else if (arrayName === "multiple") {
-        // Multiple questions includes choices array
         jsonData[arrayName].push({
           question: "",
           media: "",
@@ -113,7 +113,6 @@ const saveImageQuizForm = async (req, res) => {
     const mediaUrl = mediaFileUrl || existingScreen?.mediaFileUrl || "";
 
     if (arrayName === "bit") {
-      // Bit-by-bit: question, media, audio, answer
       pageData = {
         question: question || "",
         media: mediaUrl,
@@ -121,21 +120,23 @@ const saveImageQuizForm = async (req, res) => {
         answer: answer || "",
       };
     } else if (arrayName === "single") {
-      // Single question: question, media, audio (NO answer in JSON)
       pageData = {
         question: question || "",
         media: mediaUrl,
         audio: audioFileUrl || existingScreen?.audioFileUrl || "",
       };
     } else if (arrayName === "multiple") {
-      // Multiple questions: question, media, audio, choices
+      // ✅ Build choices array from optionA, optionB, optionC
+      const choices = [];
+      if (optionA) choices.push(optionA);
+      if (optionB) choices.push(optionB);
+      if (optionC) choices.push(optionC);
+
       pageData = {
         question: question || "",
         media: mediaUrl,
         audio: audioFileUrl || existingScreen?.audioFileUrl || "",
-        choices: selectedAnswer
-          ? selectedAnswer.split(",").map((c) => c.trim())
-          : [],
+        choices: choices,
       };
     }
 
@@ -148,7 +149,7 @@ const saveImageQuizForm = async (req, res) => {
       JSON.stringify(pageData, null, 2)
     );
 
-    // ✅ Now build screenData for MongoDB (existingScreen already fetched above)
+    // ✅ Build screenData for MongoDB with optionA/B/C
     const screenData = {
       page: pageNumber,
       question: question || "",
@@ -162,16 +163,15 @@ const saveImageQuizForm = async (req, res) => {
       bitRemovalDuration:
         bitRemovalDuration || existingScreen?.bitRemovalDuration || "3",
       selectedAnswer: selectedAnswer || existingScreen?.selectedAnswer || "",
+      optionA: optionA || existingScreen?.optionA || "",
+      optionB: optionB || existingScreen?.optionB || "",
+      optionC: optionC || existingScreen?.optionC || "",
       audioFileName: audioFileName || existingScreen?.audioFileName || "",
       audioFileUrl: audioFileUrl || existingScreen?.audioFileUrl || "",
       additionalNotes: additionalNotes || existingScreen?.additionalNotes || "",
     };
 
     console.log("💾 Screen data to save:", JSON.stringify(screenData, null, 2));
-    console.log(
-      "🔍 Existing screen data:",
-      JSON.stringify(existingScreen, null, 2)
-    );
 
     let imageQuiz = existingImageQuiz;
 
@@ -221,11 +221,6 @@ const getAllImageQuizzes = async (req, res) => {
   try {
     const imageQuizzes = await ImageQuiz.find().sort({ createdAt: -1 });
 
-    console.log(
-      "📊 Sample screen from DB:",
-      JSON.stringify(imageQuizzes[0]?.screens[0], null, 2)
-    );
-
     const shows = imageQuizzes.map((quiz) => ({
       id: quiz._id.toString(),
       quizName: quiz.quizName,
@@ -246,6 +241,9 @@ const getAllImageQuizzes = async (req, res) => {
         audioFileUrl: screen.audioFileUrl || "",
         additionalNotes: screen.additionalNotes || "",
         quizType: "image",
+        optionA: screen.optionA || "",
+        optionB: screen.optionB || "",
+        optionC: screen.optionC || "",
       })),
       numberOfScreens: quiz.screens?.length || 0,
       createdAt: quiz.createdAt,
@@ -267,11 +265,6 @@ const getImageQuizById = async (req, res) => {
       return res.status(404).json({ error: "Image quiz not found" });
     }
 
-    console.log(
-      "📊 Quiz by ID from DB:",
-      JSON.stringify(imageQuiz.screens[0], null, 2)
-    );
-
     const quizForms = (imageQuiz.screens || []).map((screen) => ({
       page: screen.page,
       question: screen.question || "",
@@ -288,6 +281,9 @@ const getImageQuizById = async (req, res) => {
       audioFileUrl: screen.audioFileUrl || "",
       additionalNotes: screen.additionalNotes || "",
       quizType: "image",
+      optionA: screen.optionA || "",
+      optionB: screen.optionB || "",
+      optionC: screen.optionC || "",
     }));
 
     console.log(`✅ Fetched quiz by ID with ${quizForms.length} screens`);
