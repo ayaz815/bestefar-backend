@@ -38,65 +38,35 @@ const saveImageQuizForm = async (req, res) => {
 
     fs.mkdirSync(path.dirname(jsonFilePath), { recursive: true });
 
-    // ✅ Determine array name based on imageQuestionType
-    let arrayName;
-    if (imageQuestionType === "bit-by-bit") {
-      arrayName = "bit";
-    } else if (imageQuestionType === "single-question") {
-      arrayName = "single";
-    } else if (imageQuestionType === "multiple-questions") {
-      arrayName = "multiple";
-    } else {
-      arrayName = "single"; // default fallback
-    }
+    // ✅ NEW: Use unified "questions" array format
+    let jsonData = { questions: [] };
 
-    // ✅ Start with fresh object containing only the current type
-    let jsonData = {};
-
-    // If file exists and has the SAME array type, load it
+    // Load existing data if file exists
     if (fs.existsSync(jsonFilePath)) {
       const fileContent = fs.readFileSync(jsonFilePath, "utf8");
       const existingData = JSON.parse(fileContent);
 
-      // Only keep existing data if it's the same array type
-      if (existingData[arrayName]) {
-        jsonData[arrayName] = existingData[arrayName];
+      // Support both old and new formats
+      if (existingData.questions) {
+        jsonData.questions = existingData.questions;
       }
     }
 
-    // ✅ Initialize the appropriate array
-    if (!jsonData[arrayName]) {
-      jsonData[arrayName] = [];
-    }
-
-    // Ensure array has 16 slots with minimal structure based on quiz type
-    while (jsonData[arrayName].length < 16) {
-      if (arrayName === "bit") {
-        jsonData[arrayName].push({
-          question: "",
-          media: "",
-          audio: "",
-          answer: "",
-        });
-      } else if (arrayName === "single") {
-        jsonData[arrayName].push({
-          question: "",
-          media: "",
-          audio: "",
-        });
-      } else if (arrayName === "multiple") {
-        jsonData[arrayName].push({
-          question: "",
-          media: "",
-          audio: "",
-          choices: [],
-        });
-      }
+    // Ensure array has 16 slots with minimal structure
+    while (jsonData.questions.length < 16) {
+      jsonData.questions.push({
+        id: jsonData.questions.length + 1,
+        type: "single", // default type
+        question: "",
+        media: "",
+        audio: "",
+        answer: "",
+      });
     }
 
     const pageNumber = parseInt(page);
 
-    // ✅ Check if quiz already exists and get existing screen data FIRST
+    // ✅ Check if quiz already exists and get existing screen data
     let existingImageQuiz = await ImageQuiz.findOne({ quizName });
     let existingScreen = null;
 
@@ -106,50 +76,58 @@ const saveImageQuizForm = async (req, res) => {
       );
     }
 
-    // ✅ Update ONLY the fields needed for HTML quiz (minimal structure)
-    let pageData = {};
+    // ✅ Map imageQuestionType to the new type format
+    let questionType;
+    if (imageQuestionType === "bit-by-bit") {
+      questionType = "bit";
+    } else if (imageQuestionType === "single-question") {
+      questionType = "single";
+    } else if (imageQuestionType === "multiple-questions") {
+      questionType = "multiple";
+    } else {
+      questionType = "single"; // default fallback
+    }
 
     // Use unified media URL
     const mediaUrl = mediaFileUrl || existingScreen?.mediaFileUrl || "";
+    const audioUrl = audioFileUrl || existingScreen?.audioFileUrl || "";
 
-    if (arrayName === "bit") {
-      pageData = {
-        question: question || "",
-        media: mediaUrl,
-        audio: audioFileUrl || existingScreen?.audioFileUrl || "",
-        answer: answer || "",
-      };
-    } else if (arrayName === "single") {
-      pageData = {
-        question: question || "",
-        media: mediaUrl,
-        audio: audioFileUrl || existingScreen?.audioFileUrl || "",
-      };
-    } else if (arrayName === "multiple") {
-      // ✅ Build choices array from optionA, optionB, optionC
-      const choices = [];
-      if (optionA) choices.push(optionA);
-      if (optionB) choices.push(optionB);
-      if (optionC) choices.push(optionC);
+    // ✅ Build the unified question object
+    let pageData = {
+      id: pageNumber,
+      type: questionType,
+      question: question || "",
+      image: mediaUrl, // Changed from 'media' to 'image' to match frontend
+      audio: audioUrl,
+      answer: answer || "",
+    };
 
-      pageData = {
-        question: question || "",
-        media: mediaUrl,
-        audio: audioFileUrl || existingScreen?.audioFileUrl || "",
-        choices: choices,
-      };
+    // Add options array for multiple choice questions
+    if (questionType === "multiple") {
+      const options = [];
+      if (optionA) options.push(optionA);
+      if (optionB) options.push(optionB);
+      if (optionC) options.push(optionC);
+
+      // Ensure the correct answer is in the options
+      if (answer && !options.includes(answer)) {
+        options.push(answer);
+      }
+
+      pageData.options = options;
     }
 
-    jsonData[arrayName][page - 1] = pageData;
+    // Update the specific page in the array
+    jsonData.questions[page - 1] = pageData;
 
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
 
     console.log(
-      `✅ Image quiz JSON updated for ${arrayName}[${page - 1}]:`,
+      `✅ Image quiz JSON updated for question ${page}:`,
       JSON.stringify(pageData, null, 2)
     );
 
-    // ✅ Build screenData for MongoDB with optionA/B/C
+    // ✅ Build screenData for MongoDB (keep existing structure)
     const screenData = {
       page: pageNumber,
       question: question || "",
@@ -363,10 +341,81 @@ const deleteImageQuiz = async (req, res) => {
   }
 };
 
+// ✅ NEW: Function to randomize quiz types for all 16 questions
+const randomizeQuizTypes = () => {
+  const types = ["single", "multiple", "bit"];
+  const questions = [];
+
+  for (let i = 1; i <= 16; i++) {
+    const randomType = types[Math.floor(Math.random() * types.length)];
+    questions.push({
+      id: i,
+      type: randomType,
+      question: "",
+      image: "",
+      audio: "",
+      answer: "",
+      ...(randomType === "multiple" && { options: [] }),
+    });
+  }
+
+  return questions;
+};
+
+// ✅ NEW: Endpoint to generate new random quiz structure
+const generateRandomQuiz = async (req, res) => {
+  try {
+    const { quizName } = req.body;
+
+    if (!quizName) {
+      return res.status(400).json({ error: "Quiz name is required" });
+    }
+
+    const isDev = process.env.NODE_ENV !== "production";
+    const jsonFilePath = isDev
+      ? path.resolve(__dirname, "../../html/data/content/content.json")
+      : "/var/www/bestefar-html2/data/content/content.json";
+
+    fs.mkdirSync(path.dirname(jsonFilePath), { recursive: true });
+
+    // Generate random structure
+    const randomQuestions = randomizeQuizTypes();
+
+    const jsonData = {
+      questions: randomQuestions,
+    };
+
+    fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
+
+    console.log("✅ Random quiz structure generated");
+
+    return res.status(200).json({
+      success: true,
+      message: "Random quiz structure generated successfully",
+      data: {
+        quizName,
+        questions: randomQuestions,
+        distribution: {
+          single: randomQuestions.filter((q) => q.type === "single").length,
+          multiple: randomQuestions.filter((q) => q.type === "multiple").length,
+          bit: randomQuestions.filter((q) => q.type === "bit").length,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error generating random quiz:", error);
+    res.status(500).json({
+      error: "Failed to generate random quiz structure",
+      details: error.message,
+    });
+  }
+};
+
 module.exports = {
   saveImageQuizForm,
   getAllImageQuizzes,
   getImageQuizById,
   updateImageQuiz,
   deleteImageQuiz,
+  generateRandomQuiz, // ✅ NEW export
 };
