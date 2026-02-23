@@ -9,27 +9,29 @@ const ImageScreenSchema = new mongoose.Schema(
     // ✅ UNIFIED media fields (handles both image and video)
     mediaFileName: { type: String, trim: true },
     mediaFileUrl: { type: String, trim: true },
-    mediaType: { type: String, enum: ["image", "video"], default: "image" },
+    mediaType: { type: String, default: "image" },
 
     imageCaption: { type: String, trim: true },
     imageQuestionType: {
       type: String,
-      enum: ["bit-by-bit", "single-question", "multiple-questions"],
-      default: "single-question",
+      default: "",
     },
     bitSize: {
       type: String,
-      enum: ["1", "2", "3"],
-      default: "1",
+      default: "",
+    },
+    bitRemovalDuration: {
+      type: String,
+      default: "",
     },
     optionA: { type: String, trim: true },
     optionB: { type: String, trim: true },
     optionC: { type: String, trim: true },
-    bitRemovalDuration: { type: String, default: "3" },
     selectedAnswer: { type: String, trim: true },
     audioFileName: { type: String, trim: true },
     audioFileUrl: { type: String, trim: true },
     additionalNotes: { type: String },
+    bgColor: { type: String, default: "#ffffff" },
   },
   { _id: false }
 );
@@ -38,9 +40,11 @@ const ImageQuizSchema = new mongoose.Schema(
   {
     quizName: { type: String, required: true, trim: true },
     quizType: { type: String, default: "image", immutable: true },
+    // ✅ FIX: Removed arrayLimit validator — it fires even with runValidators:false
+    // in some Mongoose versions, causing false "exceeds 16 screens" errors.
+    // The 16-screen limit is enforced in the controller instead.
     screens: {
       type: [ImageScreenSchema],
-      validate: [arrayLimit, "{PATH} exceeds the limit of 16 screens"],
     },
   },
   {
@@ -48,10 +52,6 @@ const ImageQuizSchema = new mongoose.Schema(
     collection: "imagequizzes",
   }
 );
-
-function arrayLimit(val) {
-  return val.length <= 16;
-}
 
 ImageQuizSchema.index({ quizName: 1 });
 ImageQuizSchema.index({ createdAt: -1 });

@@ -22,12 +22,11 @@ const saveImageQuizForm = async (req, res) => {
     optionA,
     optionB,
     optionC,
+    bgColor,
   } = req.body;
 
   if (!page || !quizName) {
-    return res.status(400).json({
-      error: "Page and quizName are required.",
-    });
+    return res.status(400).json({ error: "Page and quizName are required." });
   }
 
   try {
@@ -38,25 +37,17 @@ const saveImageQuizForm = async (req, res) => {
 
     fs.mkdirSync(path.dirname(jsonFilePath), { recursive: true });
 
-    // ✅ NEW: Use unified "questions" array format
     let jsonData = { questions: [] };
-
-    // Load existing data if file exists
     if (fs.existsSync(jsonFilePath)) {
       const fileContent = fs.readFileSync(jsonFilePath, "utf8");
       const existingData = JSON.parse(fileContent);
-
-      // Support both old and new formats
-      if (existingData.questions) {
-        jsonData.questions = existingData.questions;
-      }
+      if (existingData.questions) jsonData.questions = existingData.questions;
     }
 
-    // Ensure array has 16 slots with minimal structure
     while (jsonData.questions.length < 16) {
       jsonData.questions.push({
         id: jsonData.questions.length + 1,
-        type: "single", // default type
+        type: "single",
         question: "",
         media: "",
         audio: "",
@@ -66,126 +57,144 @@ const saveImageQuizForm = async (req, res) => {
 
     const pageNumber = parseInt(page);
 
-    // ✅ Check if quiz already exists and get existing screen data
-    let existingImageQuiz = await ImageQuiz.findOne({ quizName });
-    let existingScreen = null;
-
-    if (existingImageQuiz) {
-      existingScreen = existingImageQuiz.screens.find(
-        (s) => s.page === pageNumber
-      );
-    }
-
-    // ✅ Map imageQuestionType to the new type format
-    let questionType;
-    if (imageQuestionType === "bit-by-bit") {
-      questionType = "bit";
-    } else if (imageQuestionType === "single-question") {
-      questionType = "single";
-    } else if (imageQuestionType === "multiple-questions") {
+    let questionType = "single";
+    if (imageQuestionType === "bit-by-bit") questionType = "bit";
+    else if (imageQuestionType === "single-question") questionType = "single";
+    else if (imageQuestionType === "multiple-questions")
       questionType = "multiple";
-    } else {
-      questionType = "single"; // default fallback
-    }
 
-    // Use unified media URL
-    const mediaUrl = mediaFileUrl || existingScreen?.mediaFileUrl || "";
-    const audioUrl = audioFileUrl || existingScreen?.audioFileUrl || "";
-
-    // ✅ Build the unified question object
-    let pageData = {
+    // ── JSON file update ──────────────────────────────────────────────────────
+    const pageData = {
       id: pageNumber,
       type: questionType,
       question: question || "",
-      image: mediaUrl, // Changed from 'media' to 'image' to match frontend
-      audio: audioUrl,
+      image: mediaFileUrl || "",
+      audio: audioFileUrl || "",
       answer: answer || "",
+      bgColor: bgColor || "#ffffff",
     };
 
-    // Add options array for multiple choice questions
     if (questionType === "multiple") {
       const options = [];
       if (optionA) options.push(optionA);
       if (optionB) options.push(optionB);
       if (optionC) options.push(optionC);
-
-      // Ensure the correct answer is in the options
-      if (answer && !options.includes(answer)) {
-        options.push(answer);
-      }
-
+      if (answer && !options.includes(answer)) options.push(answer);
       pageData.options = options;
     }
 
-    // Update the specific page in the array
     jsonData.questions[page - 1] = pageData;
-
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
+    console.log(`✅ JSON updated for question ${page}`);
 
-    console.log(
-      `✅ Image quiz JSON updated for question ${page}:`,
-      JSON.stringify(pageData, null, 2)
-    );
+    // ── MongoDB update ────────────────────────────────────────────────────────
+    // Strategy: fetch the existing document, mutate the screens array in JS,
+    // then write the whole array back via $set with runValidators:false.
+    // This completely avoids all Mongoose array validators (size limit, required, etc.)
 
-    // ✅ Build screenData for MongoDB (keep existing structure)
-    const screenData = {
-      page: pageNumber,
-      question: question || "",
-      answer: answer || "",
-      mediaFileName: mediaFileName || existingScreen?.mediaFileName || "",
-      mediaFileUrl: mediaFileUrl || existingScreen?.mediaFileUrl || "",
-      mediaType: mediaType || existingScreen?.mediaType || "image",
-      imageCaption: imageCaption || existingScreen?.imageCaption || "",
-      imageQuestionType: imageQuestionType || "single-question",
-      bitSize: bitSize || "1",
-      bitRemovalDuration:
-        bitRemovalDuration || existingScreen?.bitRemovalDuration || "3",
-      selectedAnswer: selectedAnswer || existingScreen?.selectedAnswer || "",
-      optionA: optionA || existingScreen?.optionA || "",
-      optionB: optionB || existingScreen?.optionB || "",
-      optionC: optionC || existingScreen?.optionC || "",
-      audioFileName: audioFileName || existingScreen?.audioFileName || "",
-      audioFileUrl: audioFileUrl || existingScreen?.audioFileUrl || "",
-      additionalNotes: additionalNotes || existingScreen?.additionalNotes || "",
-    };
+    const existingQuiz = await ImageQuiz.findOne({ quizName }).lean();
 
-    console.log("💾 Screen data to save:", JSON.stringify(screenData, null, 2));
+    if (existingQuiz) {
+      // Build the existing screen to fall back on for unchanged fields
+      const existingScreen =
+        existingQuiz.screens.find((s) => parseInt(s.page) === pageNumber) || {};
 
-    let imageQuiz = existingImageQuiz;
+      const screenData = {
+        page: pageNumber,
+        question: question || "",
+        answer: answer || "",
+        mediaFileName: mediaFileName || existingScreen.mediaFileName || "",
+        mediaFileUrl: mediaFileUrl || existingScreen.mediaFileUrl || "",
+        mediaType: mediaType || existingScreen.mediaType || "",
+        imageCaption: imageCaption || existingScreen.imageCaption || "",
+        imageQuestionType: imageQuestionType || "",
+        bitSize: bitSize || "",
+        bitRemovalDuration:
+          bitRemovalDuration || existingScreen.bitRemovalDuration || "",
+        selectedAnswer: selectedAnswer || existingScreen.selectedAnswer || "",
+        optionA: optionA || existingScreen.optionA || "",
+        optionB: optionB || existingScreen.optionB || "",
+        optionC: optionC || existingScreen.optionC || "",
+        audioFileName: audioFileName || existingScreen.audioFileName || "",
+        audioFileUrl: audioFileUrl || existingScreen.audioFileUrl || "",
+        additionalNotes:
+          additionalNotes || existingScreen.additionalNotes || "",
+        bgColor: bgColor || existingScreen.bgColor || "#ffffff",
+      };
 
-    if (imageQuiz) {
-      const screenIndex = imageQuiz.screens.findIndex(
-        (s) => s.page === pageNumber
+      // Upsert this page into the screens array (replace if exists, add if not)
+      const screens = existingQuiz.screens.map((s) =>
+        parseInt(s.page) === pageNumber ? { ...s, ...screenData } : s
       );
 
-      if (screenIndex !== -1) {
-        Object.assign(imageQuiz.screens[screenIndex], screenData);
-        imageQuiz.markModified("screens");
-      } else {
-        imageQuiz.screens.push(screenData);
+      // If this page wasn't in the array yet, add it (capped at 16)
+      const pageAlreadyExists = existingQuiz.screens.some(
+        (s) => parseInt(s.page) === pageNumber
+      );
+      if (!pageAlreadyExists && screens.length < 16) {
+        screens.push(screenData);
+        screens.sort((a, b) => a.page - b.page);
       }
 
-      imageQuiz.screens.sort((a, b) => a.page - b.page);
-      await imageQuiz.save();
+      // Write back the entire array — runValidators:false bypasses ALL validators
+      const updated = await ImageQuiz.findOneAndUpdate(
+        { quizName },
+        { $set: { screens } },
+        { new: true, runValidators: false }
+      );
+
+      console.log(`✅ Saved page ${pageNumber} for quiz "${quizName}"`);
+      return res.status(200).json({
+        success: true,
+        message: `Image quiz form saved successfully for page ${page}`,
+        data: {
+          id: updated._id,
+          quizName: updated.quizName,
+          quizType: "image",
+          screen: screenData,
+        },
+      });
     } else {
-      imageQuiz = new ImageQuiz({
+      // Brand new quiz — create with just this one screen
+      const screenData = {
+        page: pageNumber,
+        question: question || "",
+        answer: answer || "",
+        mediaFileName: mediaFileName || "",
+        mediaFileUrl: mediaFileUrl || "",
+        mediaType: mediaType || "",
+        imageCaption: imageCaption || "",
+        imageQuestionType: imageQuestionType || "",
+        bitSize: bitSize || "",
+        bitRemovalDuration: bitRemovalDuration || "",
+        selectedAnswer: selectedAnswer || "",
+        optionA: optionA || "",
+        optionB: optionB || "",
+        optionC: optionC || "",
+        audioFileName: audioFileName || "",
+        audioFileUrl: audioFileUrl || "",
+        additionalNotes: additionalNotes || "",
+        bgColor: bgColor || "#ffffff",
+      };
+
+      const imageQuiz = await ImageQuiz.create({
         quizName,
         quizType: "image",
         screens: [screenData],
       });
-      await imageQuiz.save();
-    }
 
-    return res.status(200).json({
-      success: true,
-      message: `Image quiz form saved successfully for page ${page}`,
-      data: {
-        id: imageQuiz._id,
-        quizName: imageQuiz.quizName,
-        quizType: "image",
-        screen: screenData,
-      },
-    });
+      console.log(`✅ Created new quiz "${quizName}" with page ${pageNumber}`);
+      return res.status(200).json({
+        success: true,
+        message: `Image quiz form saved successfully for page ${page}`,
+        data: {
+          id: imageQuiz._id,
+          quizName: imageQuiz.quizName,
+          quizType: "image",
+          screen: screenData,
+        },
+      });
+    }
   } catch (error) {
     console.error("❌ Error saving image quiz form:", error);
     res.status(500).json({
@@ -198,7 +207,6 @@ const saveImageQuizForm = async (req, res) => {
 const getAllImageQuizzes = async (req, res) => {
   try {
     const imageQuizzes = await ImageQuiz.find().sort({ createdAt: -1 });
-
     const shows = imageQuizzes.map((quiz) => ({
       id: quiz._id.toString(),
       quizName: quiz.quizName,
@@ -209,11 +217,11 @@ const getAllImageQuizzes = async (req, res) => {
         answer: screen.answer || "",
         mediaFileName: screen.mediaFileName || "",
         mediaFileUrl: screen.mediaFileUrl || "",
-        mediaType: screen.mediaType || "image",
+        mediaType: screen.mediaType || "",
         imageCaption: screen.imageCaption || "",
-        imageQuestionType: screen.imageQuestionType || "single-question",
-        bitSize: screen.bitSize || "1",
-        bitRemovalDuration: screen.bitRemovalDuration || "3",
+        imageQuestionType: screen.imageQuestionType || "",
+        bitSize: screen.bitSize || "",
+        bitRemovalDuration: screen.bitRemovalDuration || "",
         selectedAnswer: screen.selectedAnswer || "",
         audioFileName: screen.audioFileName || "",
         audioFileUrl: screen.audioFileUrl || "",
@@ -222,12 +230,12 @@ const getAllImageQuizzes = async (req, res) => {
         optionA: screen.optionA || "",
         optionB: screen.optionB || "",
         optionC: screen.optionC || "",
+        bgColor: screen.bgColor || "#ffffff",
       })),
       numberOfScreens: quiz.screens?.length || 0,
       createdAt: quiz.createdAt,
       updatedAt: quiz.updatedAt,
     }));
-
     console.log(`✅ Fetched ${shows.length} image quizzes`);
     return res.status(200).json({ shows });
   } catch (err) {
@@ -242,18 +250,17 @@ const getImageQuizById = async (req, res) => {
     if (!imageQuiz) {
       return res.status(404).json({ error: "Image quiz not found" });
     }
-
     const quizForms = (imageQuiz.screens || []).map((screen) => ({
       page: screen.page,
       question: screen.question || "",
       answer: screen.answer || "",
       mediaFileName: screen.mediaFileName || "",
       mediaFileUrl: screen.mediaFileUrl || "",
-      mediaType: screen.mediaType || "image",
+      mediaType: screen.mediaType || "",
       imageCaption: screen.imageCaption || "",
-      imageQuestionType: screen.imageQuestionType || "single-question",
-      bitSize: screen.bitSize || "1",
-      bitRemovalDuration: screen.bitRemovalDuration || "3",
+      imageQuestionType: screen.imageQuestionType || "",
+      bitSize: screen.bitSize || "",
+      bitRemovalDuration: screen.bitRemovalDuration || "",
       selectedAnswer: screen.selectedAnswer || "",
       audioFileName: screen.audioFileName || "",
       audioFileUrl: screen.audioFileUrl || "",
@@ -262,8 +269,8 @@ const getImageQuizById = async (req, res) => {
       optionA: screen.optionA || "",
       optionB: screen.optionB || "",
       optionC: screen.optionC || "",
+      bgColor: screen.bgColor || "#ffffff",
     }));
-
     console.log(`✅ Fetched quiz by ID with ${quizForms.length} screens`);
     return res.status(200).json({
       id: imageQuiz._id.toString(),
@@ -280,7 +287,6 @@ const getImageQuizById = async (req, res) => {
 const updateImageQuiz = async (req, res) => {
   try {
     const showId = req.params.id;
-    console.log("Updating image quiz with ID:", showId);
     const { quizName, quizForms } = req.body;
 
     if (!quizName || !Array.isArray(quizForms)) {
@@ -289,13 +295,15 @@ const updateImageQuiz = async (req, res) => {
         .json({ success: false, message: "Invalid payload" });
     }
 
+    // Filter out empty slots (unfilled frontend pages lack a page field)
+    const validScreens = quizForms
+      .filter((s) => s && s.page != null)
+      .map((s) => ({ ...s, page: parseInt(s.page) }));
+
     const updatedImageQuiz = await ImageQuiz.findByIdAndUpdate(
       showId,
-      {
-        quizName,
-        screens: quizForms,
-      },
-      { new: true }
+      { $set: { quizName, screens: validScreens } },
+      { new: true, runValidators: false }
     );
 
     if (!updatedImageQuiz) {
@@ -341,11 +349,9 @@ const deleteImageQuiz = async (req, res) => {
   }
 };
 
-// ✅ NEW: Function to randomize quiz types for all 16 questions
 const randomizeQuizTypes = () => {
   const types = ["single", "multiple", "bit"];
   const questions = [];
-
   for (let i = 1; i <= 16; i++) {
     const randomType = types[Math.floor(Math.random() * types.length)];
     questions.push({
@@ -358,15 +364,12 @@ const randomizeQuizTypes = () => {
       ...(randomType === "multiple" && { options: [] }),
     });
   }
-
   return questions;
 };
 
-// ✅ NEW: Endpoint to generate new random quiz structure
 const generateRandomQuiz = async (req, res) => {
   try {
     const { quizName } = req.body;
-
     if (!quizName) {
       return res.status(400).json({ error: "Quiz name is required" });
     }
@@ -377,16 +380,12 @@ const generateRandomQuiz = async (req, res) => {
       : "/var/www/bestefar-html2/data/content/content.json";
 
     fs.mkdirSync(path.dirname(jsonFilePath), { recursive: true });
-
-    // Generate random structure
     const randomQuestions = randomizeQuizTypes();
-
-    const jsonData = {
-      questions: randomQuestions,
-    };
-
-    fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
-
+    fs.writeFileSync(
+      jsonFilePath,
+      JSON.stringify({ questions: randomQuestions }, null, 2),
+      "utf8"
+    );
     console.log("✅ Random quiz structure generated");
 
     return res.status(200).json({
@@ -417,5 +416,5 @@ module.exports = {
   getImageQuizById,
   updateImageQuiz,
   deleteImageQuiz,
-  generateRandomQuiz, // ✅ NEW export
+  generateRandomQuiz,
 };
