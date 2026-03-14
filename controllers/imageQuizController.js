@@ -23,6 +23,7 @@ const saveImageQuizForm = async (req, res) => {
     optionB,
     optionC,
     bgColor,
+    showId,
   } = req.body;
 
   if (!page || !quizName) {
@@ -92,8 +93,10 @@ const saveImageQuizForm = async (req, res) => {
     // then write the whole array back via $set with runValidators:false.
     // This completely avoids all Mongoose array validators (size limit, required, etc.)
 
-    const existingQuiz = await ImageQuiz.findOne({ quizName }).lean();
-
+    const existingQuiz =
+      showId && showId.trim() !== ""
+        ? await ImageQuiz.findById(showId).lean()
+        : null;
     if (existingQuiz) {
       // Build the existing screen to fall back on for unchanged fields
       const existingScreen =
@@ -137,9 +140,14 @@ const saveImageQuizForm = async (req, res) => {
       }
 
       // Write back the entire array — runValidators:false bypasses ALL validators
-      const updated = await ImageQuiz.findOneAndUpdate(
-        { quizName },
-        { $set: { screens } },
+      const updated = await ImageQuiz.findByIdAndUpdate(
+        existingQuiz._id,
+        {
+          $set: {
+            screens,
+            quizName,
+          },
+        },
         { new: true, runValidators: false }
       );
 
@@ -295,14 +303,18 @@ const updateImageQuiz = async (req, res) => {
         .json({ success: false, message: "Invalid payload" });
     }
 
-    // Filter out empty slots (unfilled frontend pages lack a page field)
     const validScreens = quizForms
       .filter((s) => s && s.page != null)
       .map((s) => ({ ...s, page: parseInt(s.page) }));
 
     const updatedImageQuiz = await ImageQuiz.findByIdAndUpdate(
       showId,
-      { $set: { quizName, screens: validScreens } },
+      {
+        $set: {
+          quizName,
+          screens: validScreens,
+        },
+      },
       { new: true, runValidators: false }
     );
 

@@ -5,6 +5,7 @@ const Quiz = require("../models/Form"); // Old model for backward compatibility
 
 const saveAudioQuizForm = async (req, res) => {
   const {
+    showId,
     page,
     quizName,
     question,
@@ -75,7 +76,8 @@ const saveAudioQuizForm = async (req, res) => {
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
 
     // ✅ Step 2: Save to MongoDB
-    let audioQuiz = await AudioQuiz.findOne({ quizName });
+    let audioQuiz =
+      showId && showId.trim() !== "" ? await AudioQuiz.findById(showId) : null;
 
     if (audioQuiz) {
       // Find if the screen already exists
