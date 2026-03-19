@@ -26,8 +26,11 @@ const saveImageQuizForm = async (req, res) => {
     showId,
   } = req.body;
 
-  if (!page || !quizName) {
-    return res.status(400).json({ error: "Page and quizName are required." });
+  if (!page) {
+    return res.status(400).json({ error: "Page is required." });
+  }
+  if (!quizName || !quizName.toString().trim()) {
+    return res.status(400).json({ error: "No show name" });
   }
 
   try {
@@ -38,7 +41,7 @@ const saveImageQuizForm = async (req, res) => {
 
     fs.mkdirSync(path.dirname(jsonFilePath), { recursive: true });
 
-    let jsonData = { questions: [] };
+    let jsonData = { quizName: "", questions: [] };
     if (fs.existsSync(jsonFilePath)) {
       const fileContent = fs.readFileSync(jsonFilePath, "utf8");
       const existingData = JSON.parse(fileContent);
@@ -75,6 +78,11 @@ const saveImageQuizForm = async (req, res) => {
       bgColor: bgColor || "#ffffff",
     };
 
+    if (questionType === "bit") {
+      pageData.bitSize = bitSize || "";
+      pageData.bitRemovalDuration = bitRemovalDuration || "";
+    }
+
     if (questionType === "multiple") {
       const options = [];
       if (optionA) options.push(optionA);
@@ -84,21 +92,20 @@ const saveImageQuizForm = async (req, res) => {
       pageData.options = options;
     }
 
+    // ✅ Save quizName at root level of JSON
+    jsonData.quizName = quizName || "";
     jsonData.questions[page - 1] = pageData;
+
     fs.writeFileSync(jsonFilePath, JSON.stringify(jsonData, null, 2), "utf8");
     console.log(`✅ JSON updated for question ${page}`);
 
     // ── MongoDB update ────────────────────────────────────────────────────────
-    // Strategy: fetch the existing document, mutate the screens array in JS,
-    // then write the whole array back via $set with runValidators:false.
-    // This completely avoids all Mongoose array validators (size limit, required, etc.)
-
     const existingQuiz =
       showId && showId.trim() !== ""
         ? await ImageQuiz.findById(showId).lean()
         : null;
+
     if (existingQuiz) {
-      // Build the existing screen to fall back on for unchanged fields
       const existingScreen =
         existingQuiz.screens.find((s) => parseInt(s.page) === pageNumber) || {};
 
@@ -125,12 +132,10 @@ const saveImageQuizForm = async (req, res) => {
         bgColor: bgColor || existingScreen.bgColor || "#ffffff",
       };
 
-      // Upsert this page into the screens array (replace if exists, add if not)
       const screens = existingQuiz.screens.map((s) =>
         parseInt(s.page) === pageNumber ? { ...s, ...screenData } : s
       );
 
-      // If this page wasn't in the array yet, add it (capped at 16)
       const pageAlreadyExists = existingQuiz.screens.some(
         (s) => parseInt(s.page) === pageNumber
       );
@@ -139,7 +144,6 @@ const saveImageQuizForm = async (req, res) => {
         screens.sort((a, b) => a.page - b.page);
       }
 
-      // Write back the entire array — runValidators:false bypasses ALL validators
       const updated = await ImageQuiz.findByIdAndUpdate(
         existingQuiz._id,
         {
@@ -163,7 +167,6 @@ const saveImageQuizForm = async (req, res) => {
         },
       });
     } else {
-      // Brand new quiz — create with just this one screen
       const screenData = {
         page: pageNumber,
         question: question || "",
