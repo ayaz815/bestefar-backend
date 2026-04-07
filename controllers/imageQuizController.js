@@ -76,6 +76,7 @@ const saveImageQuizForm = async (req, res) => {
       audio: audioFileUrl || "",
       answer: answer || "",
       bgColor: bgColor || "#ffffff",
+      notes: additionalNotes || "",
     };
 
     if (questionType === "bit") {
