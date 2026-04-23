@@ -107,6 +107,23 @@ const saveImageQuizForm = async (req, res) => {
         : null;
 
     if (existingQuiz) {
+      const nameConflict = await ImageQuiz.findOne({
+        _id: { $ne: existingQuiz._id },
+        quizName: {
+          $regex: new RegExp(
+            `^${quizName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+            "i"
+          ),
+        },
+      });
+
+      if (nameConflict) {
+        return res.status(409).json({
+          error: `A quiz named "${quizName}" already exists. Please choose a different name.`,
+          existingId: nameConflict._id,
+        });
+      }
+
       const existingScreen =
         existingQuiz.screens.find((s) => parseInt(s.page) === pageNumber) || {};
 
@@ -168,6 +185,25 @@ const saveImageQuizForm = async (req, res) => {
         },
       });
     } else {
+      const duplicateQuiz = await ImageQuiz.findOne({
+        quizName: {
+          $regex: new RegExp(
+            `^${quizName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+            "i"
+          ),
+        },
+      });
+
+      if (duplicateQuiz) {
+        console.warn(
+          `⚠️ Duplicate quiz name detected: "${quizName}" — returning existing ID`
+        );
+        return res.status(409).json({
+          error: `A quiz named "${quizName}" already exists. Please choose a different name.`,
+          existingId: duplicateQuiz._id,
+        });
+      }
+
       const screenData = {
         page: pageNumber,
         question: question || "",
@@ -305,6 +341,24 @@ const updateImageQuiz = async (req, res) => {
       return res
         .status(400)
         .json({ success: false, message: "Invalid payload" });
+    }
+
+    const nameConflict = await ImageQuiz.findOne({
+      _id: { $ne: showId },
+      quizName: {
+        $regex: new RegExp(
+          `^${quizName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+          "i"
+        ),
+      },
+    });
+
+    if (nameConflict) {
+      return res.status(409).json({
+        success: false,
+        message: `A quiz named "${quizName}" already exists. Please choose a different name.`,
+        existingId: nameConflict._id,
+      });
     }
 
     const validScreens = quizForms
