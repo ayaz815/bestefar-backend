@@ -1,5 +1,5 @@
 // controllers/imageMusicController.js
-const ImageMusic = require("../models/ImageMusic");
+const ImageMusic = require("../models/ImagrMusicQuiz");
 
 const escRe = (s) => s.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
