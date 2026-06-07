@@ -8,7 +8,7 @@ const audioQuizRoutes = require("./routes/audioQuizRoutes");
 const musicRoutes = require("./routes/musicRoutes");
 const audioRoutes = require("./routes/audioRoutes");
 const zipRoutes = require("./routes/zipRoutes");
-const imageMusicRoutes = require("./routes/imageMuiscQuizRoutes");
+const imageMusicRoutes = require("./routes/imageMuiscQuizRoutes"); // ✅ added
 const JSZip = require("jszip");
 const path = require("path");
 const fs = require("fs");
@@ -42,7 +42,10 @@ app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      console.log("🚫 Blocked Origin:", origin);
       return callback(new Error("CORS not allowed from this origin"));
     },
     credentials: true,
@@ -61,7 +64,7 @@ app.use("/api/audio", audioRoutes);
 app.use("/api/zip", zipRoutes);
 app.use("/api/s3", s3Routes);
 app.use("/api/s3", s3GetRouter);
-app.use("/api/image-music", imageMusicRoutes);
+app.use("/api/image-music", imageMusicRoutes); // ✅ added
 app.use("/html", express.static(path.join(__dirname, "html")));
 
 app.get("/", (req, res) => {
@@ -115,7 +118,6 @@ app.get("/api/verify-mongo", async (req, res) => {
   }
 });
 
-// REST endpoint so display can poll current state if WebSocket drops
 const roomState = {};
 
 app.get("/api/sync/:room", (req, res) => {
@@ -123,10 +125,7 @@ app.get("/api/sync/:room", (req, res) => {
   res.json(state);
 });
 
-// HTTP server
 const server = http.createServer(app);
-
-// WebSocket server
 const wss = new WebSocketServer({ server });
 const rooms = new Map();
 
@@ -136,6 +135,8 @@ wss.on("connection", (ws, req) => {
 
   if (!rooms.has(room)) rooms.set(room, new Set());
   rooms.get(room).add(ws);
+
+  console.log(`✅ WS connected  room="${room}"  total=${rooms.get(room).size}`);
 
   if (roomState[room]) ws.send(JSON.stringify(roomState[room]));
 
@@ -147,7 +148,6 @@ wss.on("connection", (ws, req) => {
       return;
     }
     if (msg.type !== "sync") return;
-
     roomState[room] = msg;
     rooms.get(room).forEach((client) => {
       if (client !== ws && client.readyState === 1)
@@ -158,6 +158,7 @@ wss.on("connection", (ws, req) => {
   ws.on("close", () => {
     rooms.get(room)?.delete(ws);
     if (rooms.get(room)?.size === 0) rooms.delete(room);
+    console.log(`❌ WS disconnected  room="${room}"`);
   });
 
   ws.on("error", () => ws.terminate());
