@@ -39,7 +39,13 @@ const saveImageMusicForm = async (req, res) => {
     mediaType,
     bgColor,
     additionalNotes,
+    perSlideMp3Url = "",
+    perSlideMp3FileName = "",
   } = req.body;
+
+  // ✅ KEY FIX: treat empty string the same as missing — fall back to existing
+  // imMusicMode must never default blindly to "shared" if the field arrives empty
+  const imMusicMode = req.body.imMusicMode || null; // null = "not sent or empty"
 
   if (!page) return res.status(400).json({ error: "Page is required." });
   if (!quizName?.toString().trim())
@@ -48,32 +54,33 @@ const saveImageMusicForm = async (req, res) => {
   const pageNumber = parseInt(page, 10);
   const totalPageNum = parseInt(totalPages, 10) || 16;
 
-  const {
-    perSlideMp3Url = "",
-    perSlideMp3FileName = "",
-    imMusicMode = "shared",
-  } = req.body;
-
-  const screenData = {
-    page: pageNumber,
-    mediaFileName: mediaFileName || "",
-    mediaFileUrl: mediaFileUrl || "",
-    mediaType: mediaType || "image",
-    bgColor: bgColor || "#000000",
-    melodyName: melodyName || "",
-    aboutMelody: aboutMelody || "",
-    displaySeconds: Number(displaySeconds) || 8,
-    screenText: screenText || "",
-    additionalNotes: additionalNotes || "",
-    perSlideMp3Url: perSlideMp3Url || "",
-    perSlideMp3FileName: perSlideMp3FileName || "",
-    imMusicMode: imMusicMode || "shared",
-  };
-
   try {
     const existing = showId?.trim()
       ? await ImageMusic.findById(showId).lean()
       : null;
+
+    // ✅ Resolve the show-level mode:
+    // Use what was sent if valid, otherwise keep whatever is already in DB,
+    // and only default to "shared" for brand-new shows.
+    const resolvedMode =
+      imMusicMode || (existing ? existing.imMusicMode : "shared") || "shared";
+
+    const screenData = {
+      page: pageNumber,
+      mediaFileName: mediaFileName || "",
+      mediaFileUrl: mediaFileUrl || "",
+      mediaType: mediaType || "image",
+      bgColor: bgColor || "#000000",
+      melodyName: melodyName || "",
+      aboutMelody: aboutMelody || "",
+      displaySeconds: Number(displaySeconds) || 8,
+      screenText: screenText || "",
+      additionalNotes: additionalNotes || "",
+      // ✅ per-slide mp3: only overwrite if new values arrive, otherwise preserve existing screen values
+      perSlideMp3Url: perSlideMp3Url || "",
+      perSlideMp3FileName: perSlideMp3FileName || "",
+      imMusicMode: resolvedMode,
+    };
 
     if (existing) {
       // Name conflict check
@@ -88,12 +95,22 @@ const saveImageMusicForm = async (req, res) => {
         });
       }
 
-      // Merge screen
+      // ✅ Merge screen — preserve existing per-slide mp3 if new one not sent
+      const existingScreen =
+        existing.screens.find((s) => s.page === pageNumber) || {};
+      const mergedScreenData = {
+        ...screenData,
+        // Preserve existing perSlideMp3Url if nothing new was uploaded
+        perSlideMp3Url: perSlideMp3Url || existingScreen.perSlideMp3Url || "",
+        perSlideMp3FileName:
+          perSlideMp3FileName || existingScreen.perSlideMp3FileName || "",
+      };
+
       const screens = existing.screens.map((s) =>
-        s.page === pageNumber ? { ...s, ...screenData } : s
+        s.page === pageNumber ? { ...s, ...mergedScreenData } : s
       );
       if (!existing.screens.some((s) => s.page === pageNumber)) {
-        screens.push(screenData);
+        screens.push(mergedScreenData);
         screens.sort((a, b) => a.page - b.page);
       }
 
@@ -103,11 +120,13 @@ const saveImageMusicForm = async (req, res) => {
           $set: {
             quizName,
             aboutShow: aboutShow || existing.aboutShow || "",
+            // ✅ Preserve sharedMp3Url — don't wipe it when mode is perslide
             sharedMp3Url: sharedMp3Url || existing.sharedMp3Url || "",
             sharedMp3FileName:
               sharedMp3FileName || existing.sharedMp3FileName || "",
             totalPages: totalPageNum,
-            imMusicMode: imMusicMode || existing.imMusicMode || "shared",
+            // ✅ Always use resolvedMode — never overwrite with empty
+            imMusicMode: resolvedMode,
             screens,
           },
         },
@@ -121,7 +140,8 @@ const saveImageMusicForm = async (req, res) => {
           id: updated._id,
           quizName: updated.quizName,
           quizType: "imagemusic",
-          screen: screenData,
+          imMusicMode: updated.imMusicMode,
+          screen: mergedScreenData,
         },
       });
     }
@@ -144,7 +164,7 @@ const saveImageMusicForm = async (req, res) => {
       sharedMp3Url: sharedMp3Url || "",
       sharedMp3FileName: sharedMp3FileName || "",
       totalPages: totalPageNum,
-      imMusicMode: imMusicMode || "shared",
+      imMusicMode: resolvedMode,
       screens: [screenData],
     });
 
@@ -155,6 +175,7 @@ const saveImageMusicForm = async (req, res) => {
         id: created._id,
         quizName: created.quizName,
         quizType: "imagemusic",
+        imMusicMode: created.imMusicMode,
         screen: screenData,
       },
     });
@@ -223,6 +244,7 @@ const updateImageMusicShow = async (req, res) => {
       sharedMp3Url,
       sharedMp3FileName,
       totalPages,
+      imMusicMode,
     } = req.body;
 
     if (!quizName)
@@ -242,6 +264,10 @@ const updateImageMusicShow = async (req, res) => {
       });
     }
 
+    const existing = await ImageMusic.findById(req.params.id).lean();
+    const resolvedMode =
+      imMusicMode || (existing ? existing.imMusicMode : "shared") || "shared";
+
     const updated = await ImageMusic.findByIdAndUpdate(
       req.params.id,
       {
@@ -251,6 +277,7 @@ const updateImageMusicShow = async (req, res) => {
           sharedMp3Url: sharedMp3Url || "",
           sharedMp3FileName: sharedMp3FileName || "",
           totalPages: parseInt(totalPages, 10) || 16,
+          imMusicMode: resolvedMode,
           ...(Array.isArray(screens) && {
             screens: screens.filter((s) => s?.page != null),
           }),
@@ -271,6 +298,7 @@ const updateImageMusicShow = async (req, res) => {
         id: updated._id,
         quizName: updated.quizName,
         quizType: "imagemusic",
+        imMusicMode: updated.imMusicMode,
       },
     });
   } catch (err) {
