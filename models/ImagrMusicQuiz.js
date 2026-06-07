@@ -13,6 +13,11 @@ const ImageMusicScreenSchema = new mongoose.Schema(
     displaySeconds: { type: Number, default: 8 },
     screenText: { type: String, trim: true, default: "" },
     additionalNotes: { type: String, default: "" },
+    // Option B: per-slide mp3 (plays only for this slide's displaySeconds)
+    perSlideMp3Url: { type: String, default: "" },
+    perSlideMp3FileName: { type: String, default: "" },
+    // "shared" = one MP3 plays across all slides | "perslide" = each slide has its own
+    imMusicMode: { type: String, default: "shared" },
   },
   { _id: false }
 );
@@ -25,6 +30,8 @@ const ImageMusicSchema = new mongoose.Schema(
     sharedMp3Url: { type: String, default: "" },
     sharedMp3FileName: { type: String, default: "" },
     totalPages: { type: Number, default: 16, min: 16, max: 32 },
+    // Show-level music mode persisted so it loads correctly on edit
+    imMusicMode: { type: String, default: "shared" },
     screens: { type: [ImageMusicScreenSchema], default: [] },
   },
   {

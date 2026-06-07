@@ -1,5 +1,5 @@
 // controllers/imageMusicController.js
-const ImageMusic = require("../models/ImagrMusicQuiz");
+const ImageMusic = require("../models/ImageMusic");
 
 const escRe = (s) => s.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -14,6 +14,9 @@ const screenToClient = (s) => ({
   displaySeconds: s.displaySeconds || 8,
   screenText: s.screenText || "",
   additionalNotes: s.additionalNotes || "",
+  perSlideMp3Url: s.perSlideMp3Url || "",
+  perSlideMp3FileName: s.perSlideMp3FileName || "",
+  imMusicMode: s.imMusicMode || "shared",
   quizType: "imagemusic",
 });
 
@@ -45,6 +48,12 @@ const saveImageMusicForm = async (req, res) => {
   const pageNumber = parseInt(page, 10);
   const totalPageNum = parseInt(totalPages, 10) || 16;
 
+  const {
+    perSlideMp3Url = "",
+    perSlideMp3FileName = "",
+    imMusicMode = "shared",
+  } = req.body;
+
   const screenData = {
     page: pageNumber,
     mediaFileName: mediaFileName || "",
@@ -56,6 +65,9 @@ const saveImageMusicForm = async (req, res) => {
     displaySeconds: Number(displaySeconds) || 8,
     screenText: screenText || "",
     additionalNotes: additionalNotes || "",
+    perSlideMp3Url: perSlideMp3Url || "",
+    perSlideMp3FileName: perSlideMp3FileName || "",
+    imMusicMode: imMusicMode || "shared",
   };
 
   try {
@@ -95,6 +107,7 @@ const saveImageMusicForm = async (req, res) => {
             sharedMp3FileName:
               sharedMp3FileName || existing.sharedMp3FileName || "",
             totalPages: totalPageNum,
+            imMusicMode: imMusicMode || existing.imMusicMode || "shared",
             screens,
           },
         },
@@ -131,6 +144,7 @@ const saveImageMusicForm = async (req, res) => {
       sharedMp3Url: sharedMp3Url || "",
       sharedMp3FileName: sharedMp3FileName || "",
       totalPages: totalPageNum,
+      imMusicMode: imMusicMode || "shared",
       screens: [screenData],
     });
 
@@ -164,6 +178,7 @@ const getAllImageMusicShows = async (req, res) => {
       sharedMp3Url: show.sharedMp3Url || "",
       sharedMp3FileName: show.sharedMp3FileName || "",
       totalPages: show.totalPages || 16,
+      imMusicMode: show.imMusicMode || "shared",
       numberOfScreens: show.screens?.length || 0,
       screens: (show.screens || []).map(screenToClient),
       createdAt: show.createdAt,
@@ -189,6 +204,7 @@ const getImageMusicShowById = async (req, res) => {
       sharedMp3Url: show.sharedMp3Url || "",
       sharedMp3FileName: show.sharedMp3FileName || "",
       totalPages: show.totalPages || 16,
+      imMusicMode: show.imMusicMode || "shared",
       screens: (show.screens || []).map(screenToClient),
     });
   } catch (err) {
