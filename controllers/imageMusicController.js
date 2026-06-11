@@ -3,16 +3,7 @@ const ImageMusic = require("../models/ImagrMusicQuiz");
 
 const escRe = (s) => s.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Treats Quill empty paragraphs like "<p><br></p>" as truly empty
-const isQuillEmpty = (v) => {
-  if (!v) return true;
-  return (
-    String(v)
-      .replace(/<[^>]*>/g, "")
-      .trim().length === 0
-  );
-};
-
+// aboutShow is a show-level field — NOT per screen
 const screenToClient = (s) => ({
   page: s.page,
   mediaFileName: s.mediaFileName || "",
@@ -21,7 +12,6 @@ const screenToClient = (s) => ({
   bgColor: s.bgColor || "#000000",
   melodyName: s.melodyName || "",
   aboutMelody: s.aboutMelody || "",
-  aboutShow: s.aboutShow || "",
   displaySeconds: s.displaySeconds || 8,
   screenText: s.screenText || "",
   additionalNotes: s.additionalNotes || "",
@@ -61,10 +51,7 @@ const saveImageMusicForm = async (req, res) => {
   const totalPageNum = parseInt(totalPages, 10) || 16;
   const imMusicMode = req.body.imMusicMode || null;
 
-  // FIX: aboutShow is a show-level field entered only on page 1.
-  // Only read it from the request if the client actually sent it (page 1).
-  // For all other pages, req.body.aboutShow will be undefined — we preserve
-  // the existing stored value by checking hasOwnProperty.
+  // aboutShow is show-level — only update it when page 1 sends it
   const aboutShowSent = Object.prototype.hasOwnProperty.call(
     req.body,
     "aboutShow"
@@ -100,10 +87,6 @@ const saveImageMusicForm = async (req, res) => {
         bgColor: bgColor || existingScreen.bgColor || "#000000",
         melodyName: melodyName || existingScreen.melodyName || "",
         aboutMelody: aboutMelody || existingScreen.aboutMelody || "",
-        // FIX: only update aboutShow if page 1 sent it; otherwise preserve existing
-        aboutShow: aboutShowSent
-          ? incomingAboutShow || existingScreen.aboutShow || ""
-          : existingScreen.aboutShow || "",
         displaySeconds:
           Number(displaySeconds) || existingScreen.displaySeconds || 8,
         screenText: screenText || existingScreen.screenText || "",
@@ -123,7 +106,7 @@ const saveImageMusicForm = async (req, res) => {
         screens.sort((a, b) => a.page - b.page);
       }
 
-      // FIX: only update show-level aboutShow if page 1 sent it
+      // aboutShow: only update at show level when page 1 sends it
       const showLevelAboutShow = aboutShowSent
         ? incomingAboutShow || existing.aboutShow || ""
         : existing.aboutShow || "";
@@ -175,7 +158,6 @@ const saveImageMusicForm = async (req, res) => {
       bgColor: bgColor || "#000000",
       melodyName: melodyName || "",
       aboutMelody: aboutMelody || "",
-      aboutShow: incomingAboutShow || "",
       displaySeconds: Number(displaySeconds) || 8,
       screenText: screenText || "",
       additionalNotes: additionalNotes || "",
@@ -222,6 +204,7 @@ const getAllImageMusicShows = async (req, res) => {
         id: show._id.toString(),
         quizName: show.quizName,
         quizType: "imagemusic",
+        aboutShow: show.aboutShow || "",
         sharedMp3Url: show.sharedMp3Url || "",
         sharedMp3FileName: show.sharedMp3FileName || "",
         totalPages: show.totalPages || 16,
@@ -244,36 +227,16 @@ const getImageMusicShowById = async (req, res) => {
     const show = await ImageMusic.findById(req.params.id);
     if (!show) return res.status(404).json({ error: "Show not found." });
 
-    const screens = (show.screens || []).map(screenToClient);
-
-    // Backward-compat: old shows stored aboutShow at show-level only.
-    // Migrate into page 1 on read.
-    if (show.aboutShow && screens.length > 0 && !screens[0].aboutShow) {
-      screens[0] = { ...screens[0], aboutShow: show.aboutShow };
-    }
-
-    // FIX: propagate page 1's aboutShow to ALL screens so the notes panel
-    // shows "About the show" on every slide, not just page 1.
-    // Use isQuillEmpty so "<p><br></p>" (Quill empty state) is treated as empty.
-    const sharedAboutShow = !isQuillEmpty(screens[0]?.aboutShow)
-      ? screens[0].aboutShow
-      : show.aboutShow || "";
-    const propagatedScreens = sharedAboutShow
-      ? screens.map((s) => ({
-          ...s,
-          aboutShow: isQuillEmpty(s.aboutShow) ? sharedAboutShow : s.aboutShow,
-        }))
-      : screens;
-
     return res.status(200).json({
       id: show._id.toString(),
       quizName: show.quizName,
       quizType: "imagemusic",
+      aboutShow: show.aboutShow || "", // show-level, one value for the whole show
       sharedMp3Url: show.sharedMp3Url || "",
       sharedMp3FileName: show.sharedMp3FileName || "",
       totalPages: show.totalPages || 16,
       imMusicMode: show.imMusicMode || "shared",
-      screens: propagatedScreens,
+      screens: (show.screens || []).map(screenToClient),
     });
   } catch (err) {
     console.error("❌ getImageMusicShowById:", err);
@@ -291,6 +254,7 @@ const updateImageMusicShow = async (req, res) => {
       sharedMp3FileName,
       totalPages,
       imMusicMode,
+      aboutShow,
     } = req.body;
     if (!quizName)
       return res
@@ -316,6 +280,8 @@ const updateImageMusicShow = async (req, res) => {
       {
         $set: {
           quizName,
+          aboutShow:
+            aboutShow !== undefined ? aboutShow : existing?.aboutShow || "",
           sharedMp3Url: sharedMp3Url || "",
           sharedMp3FileName: sharedMp3FileName || "",
           totalPages: parseInt(totalPages, 10) || 16,
