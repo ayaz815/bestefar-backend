@@ -3,7 +3,16 @@ const ImageMusic = require("../models/ImagrMusicQuiz");
 
 const escRe = (s) => s.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Maps a screen subdocument to the shape the frontend expects
+// Treats Quill empty paragraphs like "<p><br></p>" as truly empty
+const isQuillEmpty = (v) => {
+  if (!v) return true;
+  return (
+    String(v)
+      .replace(/<[^>]*>/g, "")
+      .trim().length === 0
+  );
+};
+
 const screenToClient = (s) => ({
   page: s.page,
   mediaFileName: s.mediaFileName || "",
@@ -12,7 +21,7 @@ const screenToClient = (s) => ({
   bgColor: s.bgColor || "#000000",
   melodyName: s.melodyName || "",
   aboutMelody: s.aboutMelody || "",
-  aboutShow: s.aboutShow || "", // per-screen field
+  aboutShow: s.aboutShow || "",
   displaySeconds: s.displaySeconds || 8,
   screenText: s.screenText || "",
   additionalNotes: s.additionalNotes || "",
@@ -28,7 +37,6 @@ const saveImageMusicForm = async (req, res) => {
     showId,
     page,
     quizName,
-    aboutShow,
     sharedMp3Url,
     sharedMp3FileName,
     totalPages,
@@ -53,6 +61,16 @@ const saveImageMusicForm = async (req, res) => {
   const totalPageNum = parseInt(totalPages, 10) || 16;
   const imMusicMode = req.body.imMusicMode || null;
 
+  // FIX: aboutShow is a show-level field entered only on page 1.
+  // Only read it from the request if the client actually sent it (page 1).
+  // For all other pages, req.body.aboutShow will be undefined — we preserve
+  // the existing stored value by checking hasOwnProperty.
+  const aboutShowSent = Object.prototype.hasOwnProperty.call(
+    req.body,
+    "aboutShow"
+  );
+  const incomingAboutShow = req.body.aboutShow || "";
+
   try {
     const existing = showId?.trim()
       ? await ImageMusic.findById(showId).lean()
@@ -60,7 +78,7 @@ const saveImageMusicForm = async (req, res) => {
     const resolvedMode = imMusicMode || existing?.imMusicMode || "shared";
 
     if (existing) {
-      // ── Name conflict check (exclude self) ─────────────────────────────────
+      // Name conflict check (exclude self)
       const conflict = await ImageMusic.findOne({
         _id: { $ne: existing._id },
         quizName: { $regex: new RegExp(`^${escRe(quizName)}$`, "i") },
@@ -71,15 +89,9 @@ const saveImageMusicForm = async (req, res) => {
           existingId: conflict._id,
         });
 
-      // ── Find existing screen so we can preserve fields not sent ────────────
       const existingScreen =
         existing.screens.find((s) => s.page === pageNumber) || {};
 
-      // FIX: Build screenData AFTER we have existingScreen so we can fall back
-      // to its aboutShow (and perSlideMp3 fields) when the incoming value is
-      // empty. Previously, aboutShow: aboutShow || "" blindly overwrote the
-      // stored value whenever a save came from any page that sent "" (which was
-      // every page except page 1 under the old quizApi logic).
       const screenData = {
         page: pageNumber,
         mediaFileName: mediaFileName || existingScreen.mediaFileName || "",
@@ -88,8 +100,10 @@ const saveImageMusicForm = async (req, res) => {
         bgColor: bgColor || existingScreen.bgColor || "#000000",
         melodyName: melodyName || existingScreen.melodyName || "",
         aboutMelody: aboutMelody || existingScreen.aboutMelody || "",
-        // KEY FIX: preserve the stored aboutShow when incoming value is empty
-        aboutShow: aboutShow || existingScreen.aboutShow || "",
+        // FIX: only update aboutShow if page 1 sent it; otherwise preserve existing
+        aboutShow: aboutShowSent
+          ? incomingAboutShow || existingScreen.aboutShow || ""
+          : existingScreen.aboutShow || "",
         displaySeconds:
           Number(displaySeconds) || existingScreen.displaySeconds || 8,
         screenText: screenText || existingScreen.screenText || "",
@@ -109,11 +123,17 @@ const saveImageMusicForm = async (req, res) => {
         screens.sort((a, b) => a.page - b.page);
       }
 
+      // FIX: only update show-level aboutShow if page 1 sent it
+      const showLevelAboutShow = aboutShowSent
+        ? incomingAboutShow || existing.aboutShow || ""
+        : existing.aboutShow || "";
+
       const updated = await ImageMusic.findByIdAndUpdate(
         existing._id,
         {
           $set: {
             quizName,
+            aboutShow: showLevelAboutShow,
             sharedMp3Url: sharedMp3Url || existing.sharedMp3Url || "",
             sharedMp3FileName:
               sharedMp3FileName || existing.sharedMp3FileName || "",
@@ -137,7 +157,7 @@ const saveImageMusicForm = async (req, res) => {
       });
     }
 
-    // ── New show — check for duplicate name ───────────────────────────────────
+    // ── New show ──────────────────────────────────────────────────────────────
     const duplicate = await ImageMusic.findOne({
       quizName: { $regex: new RegExp(`^${escRe(quizName)}$`, "i") },
     });
@@ -147,8 +167,6 @@ const saveImageMusicForm = async (req, res) => {
         existingId: duplicate._id,
       });
 
-    // For a brand-new show there is no existingScreen to fall back to,
-    // so just use the incoming values directly.
     const screenData = {
       page: pageNumber,
       mediaFileName: mediaFileName || "",
@@ -157,7 +175,7 @@ const saveImageMusicForm = async (req, res) => {
       bgColor: bgColor || "#000000",
       melodyName: melodyName || "",
       aboutMelody: aboutMelody || "",
-      aboutShow: aboutShow || "",
+      aboutShow: incomingAboutShow || "",
       displaySeconds: Number(displaySeconds) || 8,
       screenText: screenText || "",
       additionalNotes: additionalNotes || "",
@@ -169,6 +187,7 @@ const saveImageMusicForm = async (req, res) => {
     const created = await ImageMusic.create({
       quizName,
       quizType: "imagemusic",
+      aboutShow: incomingAboutShow || "",
       sharedMp3Url: sharedMp3Url || "",
       sharedMp3FileName: sharedMp3FileName || "",
       totalPages: totalPageNum,
@@ -228,10 +247,23 @@ const getImageMusicShowById = async (req, res) => {
     const screens = (show.screens || []).map(screenToClient);
 
     // Backward-compat: old shows stored aboutShow at show-level only.
-    // Migrate it into page 1 on read so the frontend loads it correctly.
+    // Migrate into page 1 on read.
     if (show.aboutShow && screens.length > 0 && !screens[0].aboutShow) {
       screens[0] = { ...screens[0], aboutShow: show.aboutShow };
     }
+
+    // FIX: propagate page 1's aboutShow to ALL screens so the notes panel
+    // shows "About the show" on every slide, not just page 1.
+    // Use isQuillEmpty so "<p><br></p>" (Quill empty state) is treated as empty.
+    const sharedAboutShow = !isQuillEmpty(screens[0]?.aboutShow)
+      ? screens[0].aboutShow
+      : show.aboutShow || "";
+    const propagatedScreens = sharedAboutShow
+      ? screens.map((s) => ({
+          ...s,
+          aboutShow: isQuillEmpty(s.aboutShow) ? sharedAboutShow : s.aboutShow,
+        }))
+      : screens;
 
     return res.status(200).json({
       id: show._id.toString(),
@@ -241,7 +273,7 @@ const getImageMusicShowById = async (req, res) => {
       sharedMp3FileName: show.sharedMp3FileName || "",
       totalPages: show.totalPages || 16,
       imMusicMode: show.imMusicMode || "shared",
-      screens,
+      screens: propagatedScreens,
     });
   } catch (err) {
     console.error("❌ getImageMusicShowById:", err);
@@ -300,6 +332,7 @@ const updateImageMusicShow = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Show not found." });
+
     return res.status(200).json({
       success: true,
       data: {

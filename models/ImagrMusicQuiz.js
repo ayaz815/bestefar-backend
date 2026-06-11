@@ -10,8 +10,6 @@ const ImageMusicScreenSchema = new mongoose.Schema(
     bgColor: { type: String, default: "#000000" },
     melodyName: { type: String, trim: true, default: "" },
     aboutMelody: { type: String, default: "" },
-    // per-page "About the show" text (each slide has its own)
-    aboutShow: { type: String, default: "" },
     displaySeconds: { type: Number, default: 8 },
     screenText: { type: String, trim: true, default: "" },
     additionalNotes: { type: String, default: "" },
@@ -26,7 +24,7 @@ const ImageMusicSchema = new mongoose.Schema(
   {
     quizName: { type: String, required: true, trim: true },
     quizType: { type: String, default: "imagemusic", immutable: true },
-    // show-level aboutShow kept for backward compat with existing data
+    // Show-level field — entered once on page 1, displayed on all slides in the notes panel
     aboutShow: { type: String, default: "" },
     sharedMp3Url: { type: String, default: "" },
     sharedMp3FileName: { type: String, default: "" },
