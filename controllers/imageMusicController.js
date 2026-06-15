@@ -104,6 +104,7 @@ const saveImageMusicForm = async (req, res) => {
       if (!existing.screens.some((s) => s.page === pageNumber)) {
         screens.push(screenData);
         screens.sort((a, b) => a.page - b.page);
+        screens = screens.filter((s) => s.page <= totalPageNum);
       }
 
       // aboutShow: only update at show level when page 1 sends it

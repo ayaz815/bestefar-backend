@@ -25,10 +25,10 @@ const app = express();
 // Database connection
 connectDB();
 
-// Middleware
-app.use(express.json());
+// ── Middleware ────────────────────────────────────────────────────────────────
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(compression());
-app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -54,7 +54,7 @@ app.use(
   })
 );
 
-// Routes
+// ── Routes ────────────────────────────────────────────────────────────────────
 app.use("/api/forms", formRoutes);
 app.use("/api/image", imageRoutes);
 app.use("/api/image-quiz", imageQuizRoutes);
@@ -64,14 +64,14 @@ app.use("/api/audio", audioRoutes);
 app.use("/api/zip", zipRoutes);
 app.use("/api/s3", s3Routes);
 app.use("/api/s3", s3GetRouter);
-app.use("/api/image-music", imageMusicRoutes); // ✅ added
+app.use("/api/image-music", imageMusicRoutes);
 app.use("/html", express.static(path.join(__dirname, "html")));
 
 app.get("/", (req, res) => {
   res.send("Backend is running and accessible via Nginx!");
 });
 
-// ZIP download endpoint
+// ── ZIP download ──────────────────────────────────────────────────────────────
 app.get("/download-zip", async (req, res) => {
   try {
     const zip = new JSZip();
@@ -118,6 +118,7 @@ app.get("/api/verify-mongo", async (req, res) => {
   }
 });
 
+// ── WebSocket sync ────────────────────────────────────────────────────────────
 const roomState = {};
 
 app.get("/api/sync/:room", (req, res) => {
