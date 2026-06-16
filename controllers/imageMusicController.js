@@ -51,7 +51,7 @@ const saveImageMusicForm = async (req, res) => {
   const totalPageNum = parseInt(totalPages, 10) || 16;
   const imMusicMode = req.body.imMusicMode || null;
 
-  // aboutShow is show-level — only update it when page 1 sends it
+  // aboutShow is show-level — only update when page 1 sends it
   const aboutShowSent = Object.prototype.hasOwnProperty.call(
     req.body,
     "aboutShow"
@@ -98,13 +98,14 @@ const saveImageMusicForm = async (req, res) => {
         imMusicMode: resolvedMode,
       };
 
-      const screens = existing.screens.map((s) =>
+      // FIX: use `let` so we can reassign after filter
+      let screens = existing.screens.map((s) =>
         s.page === pageNumber ? { ...s, ...screenData } : s
       );
       if (!existing.screens.some((s) => s.page === pageNumber)) {
         screens.push(screenData);
         screens.sort((a, b) => a.page - b.page);
-        screens = screens.filter((s) => s.page <= totalPageNum);
+        screens = screens.filter((s) => s.page <= totalPageNum); // ← was crashing: const reassignment
       }
 
       // aboutShow: only update at show level when page 1 sends it
@@ -232,7 +233,7 @@ const getImageMusicShowById = async (req, res) => {
       id: show._id.toString(),
       quizName: show.quizName,
       quizType: "imagemusic",
-      aboutShow: show.aboutShow || "", // show-level, one value for the whole show
+      aboutShow: show.aboutShow || "",
       sharedMp3Url: show.sharedMp3Url || "",
       sharedMp3FileName: show.sharedMp3FileName || "",
       totalPages: show.totalPages || 16,
@@ -257,6 +258,7 @@ const updateImageMusicShow = async (req, res) => {
       imMusicMode,
       aboutShow,
     } = req.body;
+
     if (!quizName)
       return res
         .status(400)
