@@ -81,17 +81,26 @@ const saveImageMusicForm = async (req, res) => {
 
       const screenData = {
         page: pageNumber,
+        // Media fields: empty is ambiguous (no new file picked this save
+        // vs. intentional removal) — frontend product behavior is "keep
+        // the existing file unless a new one is uploaded", so the fallback
+        // to existingScreen is intentional here.
         mediaFileName: mediaFileName || existingScreen.mediaFileName || "",
         mediaFileUrl: mediaFileUrl || existingScreen.mediaFileUrl || "",
         mediaType: mediaType || existingScreen.mediaType || "image",
         bgColor: bgColor || existingScreen.bgColor || "#000000",
-        melodyName: melodyName || existingScreen.melodyName || "",
-        aboutMelody: aboutMelody || existingScreen.aboutMelody || "",
+        // Plain text fields: Formik always sends the field's real current
+        // value on every save — there's no ambiguity to resolve. Using
+        // `field || existing` here meant an intentionally-deleted (empty)
+        // value would silently revert to whatever was previously saved,
+        // since "" is falsy in JS. These must trust the incoming value
+        // directly so deletions actually persist.
+        melodyName: melodyName ?? "",
+        aboutMelody: aboutMelody ?? "",
         displaySeconds:
           Number(displaySeconds) || existingScreen.displaySeconds || 8,
-        screenText: screenText || existingScreen.screenText || "",
-        additionalNotes:
-          additionalNotes || existingScreen.additionalNotes || "",
+        screenText: screenText ?? "",
+        additionalNotes: additionalNotes ?? "",
         perSlideMp3Url: perSlideMp3Url || existingScreen.perSlideMp3Url || "",
         perSlideMp3FileName:
           perSlideMp3FileName || existingScreen.perSlideMp3FileName || "",
