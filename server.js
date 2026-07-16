@@ -9,6 +9,7 @@ const musicRoutes = require("./routes/musicRoutes");
 const audioRoutes = require("./routes/audioRoutes");
 const zipRoutes = require("./routes/zipRoutes");
 const imageMusicRoutes = require("./routes/imageMuiscQuizRoutes");
+const crosswordRoutes = require("./routes/crosswordRoutes"); // ← NEW
 const JSZip = require("jszip");
 const path = require("path");
 const fs = require("fs");
@@ -22,7 +23,6 @@ const { WebSocketServer } = require("ws");
 
 const app = express();
 
-// Database connection
 connectDB();
 
 // ── Middleware ────────────────────────────────────────────────────────────────
@@ -42,9 +42,7 @@ app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       console.log("🚫 Blocked Origin:", origin);
       return callback(new Error("CORS not allowed from this origin"));
     },
@@ -65,6 +63,7 @@ app.use("/api/zip", zipRoutes);
 app.use("/api/s3", s3Routes);
 app.use("/api/s3", s3GetRouter);
 app.use("/api/image-music", imageMusicRoutes);
+app.use("/api/crossword", crosswordRoutes); // ← NEW
 app.use("/html", express.static(path.join(__dirname, "html")));
 
 app.get("/", (req, res) => {
@@ -76,26 +75,19 @@ app.get("/download-zip", async (req, res) => {
   try {
     const zip = new JSZip();
     const dataFolder = path.join(__dirname, "./html/data");
-
     zip.file(
       "index.html",
       fs.readFileSync(path.join(__dirname, "./html/index.html"))
     );
-
     const addFilesToZip = (folderPath, zipFolder) => {
-      const files = fs.readdirSync(folderPath);
-      files.forEach((file) => {
+      fs.readdirSync(folderPath).forEach((file) => {
         const fullPath = path.join(folderPath, file);
-        if (fs.statSync(fullPath).isDirectory()) {
+        if (fs.statSync(fullPath).isDirectory())
           addFilesToZip(fullPath, zipFolder.folder(file));
-        } else {
-          zipFolder.file(file, fs.readFileSync(fullPath));
-        }
+        else zipFolder.file(file, fs.readFileSync(fullPath));
       });
     };
-
     addFilesToZip(dataFolder, zip.folder("data"));
-
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
     res.setHeader(
       "Content-Disposition",
@@ -133,12 +125,9 @@ const rooms = new Map();
 wss.on("connection", (ws, req) => {
   const url = new URL(req.url, "http://localhost");
   const room = url.searchParams.get("room") || "default";
-
   if (!rooms.has(room)) rooms.set(room, new Set());
   rooms.get(room).add(ws);
-
   console.log(`✅ WS connected  room="${room}"  total=${rooms.get(room).size}`);
-
   if (roomState[room]) ws.send(JSON.stringify(roomState[room]));
 
   ws.on("message", (raw) => {
