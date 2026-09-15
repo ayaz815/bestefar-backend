@@ -19,9 +19,6 @@ const uploadAudio = async (req, res) => {
       ? path.resolve(__dirname, "../../html/data/content/content.json")
       : "/var/www/bestefar-html/data/content/content.json";
 
-    // const musicFilePath = `../../html/data/audioFiles/audio${page}.mp3`;
-    // const jsonFilePath = "../../html/data/content/content.json";
-
     console.log(`Uploading audio file to: ${audioFilePath}`);
 
     // ✅ Ensure folder exists before saving

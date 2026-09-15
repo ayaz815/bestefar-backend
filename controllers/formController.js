@@ -181,7 +181,6 @@ const updateShow = async (req, res) => {
       showId,
       {
         quizName,
-        // quizForms,
         quizForms,
       },
       { new: true }

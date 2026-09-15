@@ -25,18 +25,6 @@ const generatePresignedUrl = async (key, contentType = "audio/mpeg") => {
   }
 };
 
-// Optional direct upload helper (server-side)
-const uploadToS3 = async (buffer, fileName, contentType = "audio/mpeg") => {
-  const params = {
-    Bucket: process.env.AWS_BUCKET_NAME,
-    Key: fileName, // raw key
-    Body: buffer,
-    ContentType: contentType,
-  };
-  const result = await s3.upload(params).promise();
-  return result.Location;
-};
-
 // Presign GET (download) URLs for private playback
 const generatePresignedGetUrl = async (key, expiresSeconds = 300) => {
   try {
@@ -56,4 +44,4 @@ const generatePresignedGetUrl = async (key, expiresSeconds = 300) => {
   }
 };
 
-module.exports = { generatePresignedUrl, uploadToS3, generatePresignedGetUrl };
+module.exports = { generatePresignedUrl, generatePresignedGetUrl };

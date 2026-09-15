@@ -1,4 +1,4 @@
-const CrosswordShow = require("../models/Crosswordshow");
+const CrosswordShow = require("../models/CrosswordShow");
 
 // ── helpers ────────────────────────────────────────────────────────────────
 const clean = (doc) => ({

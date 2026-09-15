@@ -127,26 +127,28 @@ const saveImageQuizForm = async (req, res) => {
       const existingScreen =
         existingQuiz.screens.find((s) => parseInt(s.page) === pageNumber) || {};
 
+      // The frontend always sends the full per-page form state on every
+      // save (including explicit "" to clear a removed file), so incoming
+      // values are authoritative — falling back to existingScreen here
+      // used to make it impossible to ever clear a field once set.
       const screenData = {
         page: pageNumber,
         question: question || "",
         answer: answer || "",
-        mediaFileName: mediaFileName || existingScreen.mediaFileName || "",
-        mediaFileUrl: mediaFileUrl || existingScreen.mediaFileUrl || "",
+        mediaFileName: mediaFileName || "",
+        mediaFileUrl: mediaFileUrl || "",
         mediaType: mediaType || existingScreen.mediaType || "",
-        imageCaption: imageCaption || existingScreen.imageCaption || "",
+        imageCaption: imageCaption || "",
         imageQuestionType: imageQuestionType || "",
         bitSize: bitSize || "",
-        bitRemovalDuration:
-          bitRemovalDuration || existingScreen.bitRemovalDuration || "",
-        selectedAnswer: selectedAnswer || existingScreen.selectedAnswer || "",
-        optionA: optionA || existingScreen.optionA || "",
-        optionB: optionB || existingScreen.optionB || "",
-        optionC: optionC || existingScreen.optionC || "",
-        audioFileName: audioFileName || existingScreen.audioFileName || "",
-        audioFileUrl: audioFileUrl || existingScreen.audioFileUrl || "",
-        additionalNotes:
-          additionalNotes || existingScreen.additionalNotes || "",
+        bitRemovalDuration: bitRemovalDuration || "",
+        selectedAnswer: selectedAnswer || "",
+        optionA: optionA || "",
+        optionB: optionB || "",
+        optionC: optionC || "",
+        audioFileName: audioFileName || "",
+        audioFileUrl: audioFileUrl || "",
+        additionalNotes: additionalNotes || "",
         bgColor: bgColor || existingScreen.bgColor || "#ffffff",
       };
 
@@ -419,72 +421,10 @@ const deleteImageQuiz = async (req, res) => {
   }
 };
 
-const randomizeQuizTypes = () => {
-  const types = ["single", "multiple", "bit"];
-  const questions = [];
-  for (let i = 1; i <= 16; i++) {
-    const randomType = types[Math.floor(Math.random() * types.length)];
-    questions.push({
-      id: i,
-      type: randomType,
-      question: "",
-      image: "",
-      audio: "",
-      answer: "",
-      ...(randomType === "multiple" && { options: [] }),
-    });
-  }
-  return questions;
-};
-
-const generateRandomQuiz = async (req, res) => {
-  try {
-    const { quizName } = req.body;
-    if (!quizName) {
-      return res.status(400).json({ error: "Quiz name is required" });
-    }
-
-    const isDev = process.env.NODE_ENV !== "production";
-    const jsonFilePath = isDev
-      ? path.resolve(__dirname, "../../html/data/content/content.json")
-      : "/var/www/bestefar-html2/data/content/content.json";
-
-    fs.mkdirSync(path.dirname(jsonFilePath), { recursive: true });
-    const randomQuestions = randomizeQuizTypes();
-    fs.writeFileSync(
-      jsonFilePath,
-      JSON.stringify({ questions: randomQuestions }, null, 2),
-      "utf8"
-    );
-    console.log("✅ Random quiz structure generated");
-
-    return res.status(200).json({
-      success: true,
-      message: "Random quiz structure generated successfully",
-      data: {
-        quizName,
-        questions: randomQuestions,
-        distribution: {
-          single: randomQuestions.filter((q) => q.type === "single").length,
-          multiple: randomQuestions.filter((q) => q.type === "multiple").length,
-          bit: randomQuestions.filter((q) => q.type === "bit").length,
-        },
-      },
-    });
-  } catch (error) {
-    console.error("❌ Error generating random quiz:", error);
-    res.status(500).json({
-      error: "Failed to generate random quiz structure",
-      details: error.message,
-    });
-  }
-};
-
 module.exports = {
   saveImageQuizForm,
   getAllImageQuizzes,
   getImageQuizById,
   updateImageQuiz,
   deleteImageQuiz,
-  generateRandomQuiz,
 };
