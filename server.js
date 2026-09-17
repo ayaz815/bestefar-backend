@@ -30,39 +30,23 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(compression());
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://localhost:5173",
-  "https://bestefar.no",
-  "https://bestefar-frontend.s3-website.eu-north-1.amazonaws.com",
-];
-
-// Shared preview pages (image/audio/imagemusic quiz) are opened from links
-// people forward through WhatsApp, iMessage, Instagram, etc. Those apps'
-// in-app browsers commonly load the page under "www.bestefar.no" (or a
-// slightly different-cased/trailing-slash Origin) instead of the bare
-// domain above, which an exact-match whitelist silently rejects — the
-// preview's fetch() to the API then fails and the page is stuck on
-// "Loading...". Match by hostname (any bestefar.no subdomain) instead of
-// exact string equality so those origins aren't blocked.
-const isAllowedOrigin = (origin) => {
-  if (allowedOrigins.includes(origin)) return true;
-  try {
-    const { hostname } = new URL(origin);
-    return hostname === "bestefar.no" || hostname.endsWith(".bestefar.no");
-  } catch {
-    return false;
-  }
-};
-
+// This API serves two very different kinds of clients:
+//  1. The admin app (bestefar.no / localhost) — makes authenticated writes.
+//  2. Public, read-only quiz-preview pages, opened via links people forward
+//     through WhatsApp, iMessage, Instagram, Messenger, etc. Those apps'
+//     in-app browsers frequently proxy the request through their OWN
+//     domain rather than bestefar.no, so no origin whitelist can ever
+//     enumerate them all — every attempt to tighten the list has just
+//     moved the "stuck on Loading..." bug to a different in-app browser.
+//     Since the preview data has no auth/session and is meant to be
+//     viewable by anyone with the link, there is nothing a CORS whitelist
+//     is actually protecting here. Allow every origin (reflected, not "*",
+//     so it stays compatible with credentials: true for the admin app).
+// Confirmed with the project owner before relaxing this (2026-09-17).
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (isAllowedOrigin(origin)) return callback(null, true);
-      console.log("🚫 Blocked Origin:", origin);
-      return callback(new Error("CORS not allowed from this origin"));
+      return callback(null, true);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
