@@ -38,11 +38,29 @@ const allowedOrigins = [
   "https://bestefar-frontend.s3-website.eu-north-1.amazonaws.com",
 ];
 
+// Shared preview pages (image/audio/imagemusic quiz) are opened from links
+// people forward through WhatsApp, iMessage, Instagram, etc. Those apps'
+// in-app browsers commonly load the page under "www.bestefar.no" (or a
+// slightly different-cased/trailing-slash Origin) instead of the bare
+// domain above, which an exact-match whitelist silently rejects — the
+// preview's fetch() to the API then fails and the page is stuck on
+// "Loading...". Match by hostname (any bestefar.no subdomain) instead of
+// exact string equality so those origins aren't blocked.
+const isAllowedOrigin = (origin) => {
+  if (allowedOrigins.includes(origin)) return true;
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === "bestefar.no" || hostname.endsWith(".bestefar.no");
+  } catch {
+    return false;
+  }
+};
+
 app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (isAllowedOrigin(origin)) return callback(null, true);
       console.log("🚫 Blocked Origin:", origin);
       return callback(new Error("CORS not allowed from this origin"));
     },
