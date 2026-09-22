@@ -220,10 +220,27 @@ const getAudioQuizById = async (req, res) => {
       return res.status(404).json({ error: "Audio quiz not found" });
     }
 
+    // Normal shape: `screens` is a flat array of screen objects, each with
+    // its own `page`. Some documents saved under the old Quiz model instead
+    // ended up with `screens` as a ONE-element array whose single element is
+    // itself an object keyed "0", "1", "2"... (each value being the actual
+    // screen) — a legacy save-path bug, not something wrong with this read.
+    // Flatten both shapes here so every consumer of this endpoint always
+    // gets the flat, page-keyed array it expects.
     const quizForms = [];
     (audioQuiz.screens || []).forEach((screen) => {
-      if (screen && typeof screen === "object") {
-        quizForms.push(screen);
+      if (!screen || typeof screen !== "object") return;
+      const plain =
+        typeof screen.toObject === "function" ? screen.toObject() : screen;
+      if (plain.page != null) {
+        quizForms.push(plain);
+      } else {
+        // Legacy wrapped shape — pull the nested screens out of it.
+        Object.values(plain).forEach((nested) => {
+          if (nested && typeof nested === "object" && nested.page != null) {
+            quizForms.push(nested);
+          }
+        });
       }
     });
 
