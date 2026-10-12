@@ -97,7 +97,7 @@ const saveForm = async (req, res) => {
       {
         $set: {
           [`screens.${page - 1}`]: screenData,
-          ...(page === 1 && {
+          ...(Number(page) === 1 && {
             quizInfo: quizInfo || "",
             quizMusician: quizMusician || "",
           }),
