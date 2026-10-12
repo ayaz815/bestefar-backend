@@ -19,6 +19,8 @@ const ScreenSchema = new mongoose.Schema(
 
 const QuizSchema = new mongoose.Schema({
   quizName: { type: String, required: true, trim: true },
+  quizInfo: { type: String, trim: true, default: "" },
+  quizMusician: { type: String, trim: true, default: "" },
   screens: {
     type: [ScreenSchema],
     validate: [arrayLimit, "{PATH} exceeds the limit of 16 screens"],

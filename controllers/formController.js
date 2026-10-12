@@ -7,6 +7,8 @@ const saveForm = async (req, res) => {
   const {
     page,
     quizName,
+    quizInfo,
+    quizMusician,
     question,
     answer,
     firmNaming,
@@ -87,11 +89,18 @@ const saveForm = async (req, res) => {
     };
 
     // ✅ Step 2: Upsert into MongoDB
+    // quizInfo/quizMusician are quiz-level (shown once on bestefar.no's
+    // catalog, not per-screen), so they're only ever set from page 1's
+    // save - the field is disabled on every other page in the UI anyway.
     const quiz = await Quiz.findOneAndUpdate(
       { quizName },
       {
         $set: {
           [`screens.${page - 1}`]: screenData,
+          ...(page === 1 && {
+            quizInfo: quizInfo || "",
+            quizMusician: quizMusician || "",
+          }),
         },
       },
       {
@@ -128,6 +137,8 @@ const getAllShows = async (req, res) => {
       return {
         id: quiz._id.toString(),
         quizName: quiz.quizName,
+        quizInfo: quiz.quizInfo || "",
+        quizMusician: quiz.quizMusician || "",
         quizForms,
       };
     });
@@ -157,6 +168,8 @@ const getShowById = async (req, res) => {
     return res.status(200).json({
       id: quiz._id.toString(),
       quizName: quiz.quizName,
+      quizInfo: quiz.quizInfo || "",
+      quizMusician: quiz.quizMusician || "",
       quizForms,
     });
   } catch (err) {
