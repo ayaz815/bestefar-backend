@@ -92,22 +92,27 @@ const saveForm = async (req, res) => {
     // quizInfo/quizMusician are quiz-level (shown once on bestefar.no's
     // catalog, not per-screen), so they're only ever set from page 1's
     // save - the field is disabled on every other page in the UI anyway.
-    const quiz = await Quiz.findOneAndUpdate(
-      { quizName },
-      {
-        $set: {
-          [`screens.${page - 1}`]: screenData,
-          ...(Number(page) === 1 && {
-            quizInfo: quizInfo || "",
-            quizMusician: quizMusician || "",
-          }),
-        },
-      },
-      {
-        new: true,
-        upsert: true,
-      }
-    );
+    //
+    // IMPORTANT: don't $set a dot-path like `screens.${page-1}` directly in
+    // an upsert - if `screens` doesn't already exist as a real array on the
+    // document (e.g. this is the first page ever saved for a brand new
+    // quiz), MongoDB creates `screens` as a plain OBJECT with numeric
+    // string keys ("0", "1", ...) instead of a true array. `screens.length`
+    // then reads as 1 forever after, even with all 16 pages filled in -
+    // this is exactly what broke the "Ant spørsmål" count on the catalog.
+    // Read-modify-write with a real JS array avoids that ambiguity.
+    let quiz = await Quiz.findOne({ quizName });
+    if (!quiz) {
+      quiz = new Quiz({ quizName, screens: [] });
+    }
+    const screensArr = Array.isArray(quiz.screens) ? [...quiz.screens] : [];
+    screensArr[page - 1] = screenData;
+    quiz.screens = screensArr;
+    if (Number(page) === 1) {
+      quiz.quizInfo = quizInfo || "";
+      quiz.quizMusician = quizMusician || "";
+    }
+    await quiz.save();
 
     console.log(`✅ MongoDB quiz updated for page ${page}`);
 
