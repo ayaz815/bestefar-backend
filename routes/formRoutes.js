@@ -6,6 +6,7 @@ const {
   updateShow,
   deleteShow,
 } = require("../controllers/formController");
+const { getAudioQuizPdf } = require("../controllers/pdfController");
 const multer = require("multer");
 
 const router = express.Router();
@@ -19,5 +20,6 @@ router.get("/get-all", getAllShows);
 router.get("/get-show/:id", getShowById);
 router.put("/update-show/:id", updateShow);
 router.delete("/delete-show/:id", deleteShow);
+router.get("/pdf/:id", getAudioQuizPdf);
 
 module.exports = router;
