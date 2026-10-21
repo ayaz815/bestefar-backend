@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Quiz = require("../models/Form");
 const ImageQuiz = require("../models/ImageQuiz");
 const ImageMusic = require("../models/ImageMusicQuiz");
@@ -11,16 +12,20 @@ const MODELS = {
   crossword: CrosswordShow,
 };
 
-const findModel = (type, res) => {
+const findModel = (type, id, res) => {
   const Model = MODELS[type];
   if (!Model) res.status(400).json({ error: "Unknown quiz type" });
+  else if (!mongoose.isValidObjectId(id)) {
+    res.status(404).json({ error: "Show not found" });
+    return null;
+  }
   return Model;
 };
 
 // GET /api/visibility/:type/:id -> { isPublic }
 const getVisibility = async (req, res) => {
   try {
-    const Model = findModel(req.params.type, res);
+    const Model = findModel(req.params.type, req.params.id, res);
     if (!Model) return;
     const doc = await Model.findById(req.params.id).select("isPublic");
     if (!doc) return res.status(404).json({ error: "Show not found" });
@@ -35,7 +40,7 @@ const getVisibility = async (req, res) => {
 // Only touches the flag, so it can't clobber a half-finished quiz's pages.
 const setVisibility = async (req, res) => {
   try {
-    const Model = findModel(req.params.type, res);
+    const Model = findModel(req.params.type, req.params.id, res);
     if (!Model) return;
     if (typeof req.body.isPublic !== "boolean") {
       return res.status(400).json({ error: "isPublic must be true or false" });
