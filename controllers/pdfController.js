@@ -5,6 +5,7 @@ const React = require("react");
 const AudioQuiz = require("../models/AudioQuiz");
 const Quiz = require("../models/Form"); // Old model for backward compatibility
 const ImageQuiz = require("../models/ImageQuiz");
+const ImageMusic = require("../models/ImageMusicQuiz");
 const CrosswordShow = require("../models/CrosswordShow");
 const AudioQuizDoc = require("../pdf/AudioQuizDoc");
 const ImageQuizDoc = require("../pdf/ImageQuizDoc");
@@ -115,6 +116,36 @@ const getImageQuizPdf = async (req, res) => {
   }
 };
 
+// BilderMusikk: same sheets as BildeQuiz (MusikkQuiz cover). Its screens have
+// no question/answer fields, so the on-screen text is the clue and the melody
+// name is the answer.
+const getImageMusicPdf = async (req, res) => {
+  try {
+    const quiz = mongoose.isValidObjectId(req.params.id)
+      ? await ImageMusic.findById(req.params.id).lean()
+      : null;
+    if (!quiz) return res.status(404).json({ error: "Quiz not found" });
+
+    const quizForms = [];
+    (quiz.screens || []).forEach((s) => {
+      quizForms[(parseInt(s.page) || 1) - 1] = {
+        question: s.screenText,
+        answer: s.melodyName,
+      };
+    });
+
+    const doc = e(ImageQuizDoc, {
+      quizName: quiz.quizName,
+      quizForms,
+      quizType: "imagemusic",
+    });
+    await sendPdf(res, doc, "BilderMusikk", quiz.quizName);
+  } catch (err) {
+    console.error("❌ Error generating image music PDF:", err);
+    res.status(500).json({ error: "Failed to generate PDF" });
+  }
+};
+
 // TekstQuiz (crossword): blank puzzle page + solution page, as in the generator.
 const getCrosswordPdf = async (req, res) => {
   try {
@@ -142,4 +173,4 @@ const getCrosswordPdf = async (req, res) => {
   }
 };
 
-module.exports = { getAudioQuizPdf, getImageQuizPdf, getCrosswordPdf };
+module.exports = { getAudioQuizPdf, getImageQuizPdf, getImageMusicPdf, getCrosswordPdf };

@@ -9,10 +9,13 @@ const {
   deleteImageMusicShow,
 } = require("../controllers/imageMusicController");
 
+const { getImageMusicPdf } = require("../controllers/pdfController");
+
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post("/save-image-music-form", upload.none(), saveImageMusicForm);
+router.get("/pdf/:id", getImageMusicPdf);
 router.get("/get-all-image-music-shows", getAllImageMusicShows);
 router.get("/get-image-music-show/:id", getImageMusicShowById);
 router.put("/update-image-music-show/:id", upload.none(), updateImageMusicShow);
