@@ -12,3 +12,4 @@ Short, newest-first log of what's actually shipped in this repo, so a new sessio
 
 Older history: `git log --oneline` for anything before this.
 - 2026-10-21 — Add `isPublic` publish flag (drafts hidden from bestefar.no until published); new `/api/visibility/:type/:id` — 7034e67
+- 2026-10-22 — PDF generation for BildeQuiz (`/api/image-quiz/pdf/:id`) and crossword (`/api/crossword/pdf/:id`), same layouts as the generator — c93407c
