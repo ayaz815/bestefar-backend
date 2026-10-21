@@ -11,3 +11,4 @@ Short, newest-first log of what's actually shipped in this repo, so a new sessio
 - **2026-06-07 → 2026-06-20** — Built out the ImageMusic quiz API (create, update, "about show" text, screen text). (`5b40b53` … `dd40621`)
 
 Older history: `git log --oneline` for anything before this.
+- 2026-10-21 — Add `isPublic` publish flag (drafts hidden from bestefar.no until published); new `/api/visibility/:type/:id` — 7034e67
