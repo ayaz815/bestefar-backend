@@ -8,7 +8,10 @@ const {
   deleteCrossword,
 } = require("../controllers/crosswordController");
 
+const { getCrosswordPdf } = require("../controllers/pdfController");
+
 router.post("/create", createCrossword);
+router.get("/pdf/:id", getCrosswordPdf);
 router.get("/all", getAllCrosswords);
 router.get("/:id", getCrosswordById);
 router.put("/:id", updateCrossword);

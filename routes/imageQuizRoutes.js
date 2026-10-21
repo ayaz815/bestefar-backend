@@ -6,6 +6,7 @@ const {
   updateImageQuiz,
   deleteImageQuiz,
 } = require("../controllers/imageQuizController");
+const { getImageQuizPdf } = require("../controllers/pdfController");
 const multer = require("multer");
 
 const router = express.Router();
@@ -37,5 +38,6 @@ router.get("/get-all-image-quizzes", getAllImageQuizzes);
 router.get("/get-image-quiz/:id", getImageQuizById);
 router.put("/update-image-quiz/:id", updateImageQuiz);
 router.delete("/delete-image-quiz/:id", deleteImageQuiz);
+router.get("/pdf/:id", getImageQuizPdf);
 
 module.exports = router;
