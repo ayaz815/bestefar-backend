@@ -24,6 +24,10 @@ const ImageMusicSchema = new mongoose.Schema(
   {
     quizName: { type: String, required: true, trim: true },
     quizType: { type: String, default: "imagemusic", immutable: true },
+    // Shown on bestefar.no only once the author publishes it. No default on
+    // purpose: quizzes saved before this field existed have no value and stay
+    // public (see isPublic !== false checks); new quizzes are created false.
+    isPublic: { type: Boolean },
     // Show-level field — entered once on page 1, displayed on all slides in the notes panel
     aboutShow: { type: String, default: "" },
     sharedMp3Url: { type: String, default: "" },

@@ -19,6 +19,10 @@ const CrosswordShowSchema = new mongoose.Schema(
   {
     quizName: { type: String, required: true, trim: true },
     quizType: { type: String, default: "crossword" },
+    // Shown on bestefar.no only once the author publishes it. No default on
+    // purpose: quizzes saved before this field existed have no value and stay
+    // public (see isPublic !== false checks); new quizzes are created false.
+    isPublic: { type: Boolean },
     words: [{ word: String, clue: String }], // raw input, max 50
     grid: [[{ type: String, default: null }]], // 15x15, null = black
     placedWords: [PlacedWordSchema],

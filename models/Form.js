@@ -21,6 +21,10 @@ const QuizSchema = new mongoose.Schema({
   quizName: { type: String, required: true, trim: true },
   quizInfo: { type: String, trim: true, default: "" },
   quizMusician: { type: String, trim: true, default: "" },
+  // Shown on bestefar.no only once the author publishes it. No default on
+  // purpose: quizzes saved before this field existed have no value and stay
+  // public (see isPublic !== false checks); new quizzes are created false.
+  isPublic: { type: Boolean },
   screens: {
     type: [ScreenSchema],
     validate: [arrayLimit, "{PATH} exceeds the limit of 16 screens"],

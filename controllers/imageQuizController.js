@@ -230,6 +230,7 @@ const saveImageQuizForm = async (req, res) => {
       const imageQuiz = await ImageQuiz.create({
         quizName,
         quizType: "image",
+        isPublic: false,
         screens: [screenData],
       });
 
@@ -261,6 +262,7 @@ const getAllImageQuizzes = async (req, res) => {
       id: quiz._id.toString(),
       quizName: quiz.quizName,
       quizType: "image",
+      isPublic: quiz.isPublic !== false,
       quizForms: (quiz.screens || []).map((screen) => ({
         page: screen.page,
         question: screen.question || "",

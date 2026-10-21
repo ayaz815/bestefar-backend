@@ -175,6 +175,7 @@ const saveImageMusicForm = async (req, res) => {
     const created = await ImageMusic.create({
       quizName,
       quizType: "imagemusic",
+      isPublic: false,
       aboutShow: incomingAboutShow || "",
       sharedMp3Url: sharedMp3Url || "",
       sharedMp3FileName: sharedMp3FileName || "",
@@ -210,6 +211,7 @@ const getAllImageMusicShows = async (req, res) => {
         id: show._id.toString(),
         quizName: show.quizName,
         quizType: "imagemusic",
+        isPublic: show.isPublic !== false,
         aboutShow: show.aboutShow || "",
         sharedMp3Url: show.sharedMp3Url || "",
         sharedMp3FileName: show.sharedMp3FileName || "",

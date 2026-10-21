@@ -5,6 +5,7 @@ const clean = (doc) => ({
   id: doc._id.toString(),
   quizName: doc.quizName,
   quizType: doc.quizType,
+  isPublic: doc.isPublic !== false,
   words: doc.words,
   grid: doc.grid,
   placedWords: doc.placedWords,
@@ -27,6 +28,7 @@ exports.createCrossword = async (req, res) => {
       grid: grid || [],
       placedWords: placedWords || [],
       totalWords: totalWords || 0,
+      isPublic: false,
     });
 
     res.status(201).json({ success: true, data: clean(doc) });
@@ -58,7 +60,7 @@ exports.getAllCrosswords = async (req, res) => {
     const docs = await CrosswordShow.find()
       .sort({ createdAt: -1 })
       .select(
-        "quizName quizType totalWords placedWords gridSize createdAt updatedAt"
+        "quizName quizType isPublic totalWords placedWords gridSize createdAt updatedAt"
       );
     res.json({ success: true, data: docs.map(clean) });
   } catch (err) {

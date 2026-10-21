@@ -40,6 +40,10 @@ const ImageQuizSchema = new mongoose.Schema(
   {
     quizName: { type: String, required: true, trim: true },
     quizType: { type: String, default: "image", immutable: true },
+    // Shown on bestefar.no only once the author publishes it. No default on
+    // purpose: quizzes saved before this field existed have no value and stay
+    // public (see isPublic !== false checks); new quizzes are created false.
+    isPublic: { type: Boolean },
     // ✅ FIX: Removed arrayLimit validator — it fires even with runValidators:false
     // in some Mongoose versions, causing false "exceeds 16 screens" errors.
     // The 16-screen limit is enforced in the controller instead.

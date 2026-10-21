@@ -10,6 +10,7 @@ const audioRoutes = require("./routes/audioRoutes");
 const zipRoutes = require("./routes/zipRoutes");
 const imageMusicRoutes = require("./routes/imageMusicQuizRoutes");
 const crosswordRoutes = require("./routes/crosswordRoutes");
+const visibilityRoutes = require("./routes/visibilityRoutes");
 const JSZip = require("jszip");
 const path = require("path");
 const fs = require("fs");
@@ -66,6 +67,7 @@ app.use("/api/s3", s3Routes);
 app.use("/api/s3", s3GetRouter);
 app.use("/api/image-music", imageMusicRoutes);
 app.use("/api/crossword", crosswordRoutes); // ← NEW
+app.use("/api/visibility", visibilityRoutes);
 app.use("/html", express.static(path.join(__dirname, "html")));
 
 app.get("/", (req, res) => {

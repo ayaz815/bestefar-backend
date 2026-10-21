@@ -103,7 +103,7 @@ const saveForm = async (req, res) => {
     // Read-modify-write with a real JS array avoids that ambiguity.
     let quiz = await Quiz.findOne({ quizName });
     if (!quiz) {
-      quiz = new Quiz({ quizName, screens: [] });
+      quiz = new Quiz({ quizName, screens: [], isPublic: false });
     }
     const screensArr = Array.isArray(quiz.screens) ? [...quiz.screens] : [];
     screensArr[page - 1] = screenData;
@@ -144,6 +144,7 @@ const getAllShows = async (req, res) => {
         quizName: quiz.quizName,
         quizInfo: quiz.quizInfo || "",
         quizMusician: quiz.quizMusician || "",
+        isPublic: quiz.isPublic !== false,
         quizForms,
       };
     });
