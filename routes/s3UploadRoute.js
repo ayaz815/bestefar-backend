@@ -19,9 +19,16 @@ router.get("/s3-presigned-url", async (req, res) => {
       });
     }
 
-    const rawKey = `${type}Files/${fileName}`;
+    // Every upload gets its own key. The key used to be just the original
+    // filename, so two uploads with the same name (different pages, or
+    // different quizzes - e.g. a re-exported "melody.mp3") overwrote one
+    // S3 object and every page pointing at it played the last upload.
+    const uniqueName = `${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}-${fileName}`;
+    const rawKey = `${type}Files/${uniqueName}`;
     const url = await generatePresignedUrl(rawKey, contentType);
-    const encodedKey = `${type}Files/${encodeURIComponent(fileName)}`;
+    const encodedKey = `${type}Files/${encodeURIComponent(uniqueName)}`;
     const publicUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${encodedKey}`;
 
     res.json({ url, publicUrl, key: rawKey });

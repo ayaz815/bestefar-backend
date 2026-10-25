@@ -21,9 +21,11 @@ const saveForm = async (req, res) => {
     audioFileUrl,
   } = req.body;
 
-  if (!page || !question || !answer || !firmNaming || !quizName) {
+  // Only the page and quiz name are required: a brand-new quiz must be
+  // saveable with just its name, the rest is filled in page by page.
+  if (!page || !quizName) {
     return res.status(400).json({
-      error: "Page, question, answer, firmNaming, and quizName are required.",
+      error: "Page and quizName are required.",
     });
   }
 
