@@ -44,6 +44,10 @@ const ImageQuizSchema = new mongoose.Schema(
     // purpose: quizzes saved before this field existed have no value and stay
     // public (see isPublic !== false checks); new quizzes are created false.
     isPublic: { type: Boolean },
+    // Who may open this show: restricted (default, only customers allowed by their plan),
+    // registered (any logged-in customer) or demo (customers with the demo tick).
+    // No default on purpose: missing value is read as restricted.
+    accessTier: { type: String, enum: ['restricted', 'registered', 'demo'] },
     // ✅ FIX: Removed arrayLimit validator — it fires even with runValidators:false
     // in some Mongoose versions, causing false "exceeds 16 screens" errors.
     // The 16-screen limit is enforced in the controller instead.
