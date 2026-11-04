@@ -263,6 +263,7 @@ const getAllImageQuizzes = async (req, res) => {
       quizName: quiz.quizName,
       quizType: "image",
       isPublic: quiz.isPublic !== false,
+      accessTier: quiz.accessTier || "restricted",
       quizForms: (quiz.screens || []).map((screen) => ({
         page: screen.page,
         question: screen.question || "",

@@ -212,6 +212,7 @@ const getAllImageMusicShows = async (req, res) => {
         quizName: show.quizName,
         quizType: "imagemusic",
         isPublic: show.isPublic !== false,
+        accessTier: show.accessTier || "restricted",
         aboutShow: show.aboutShow || "",
         sharedMp3Url: show.sharedMp3Url || "",
         sharedMp3FileName: show.sharedMp3FileName || "",

@@ -2,6 +2,7 @@
 
 Short, newest-first log of what's actually shipped in this repo, so a new session doesn't have to re-derive it from `git log`. Deploy status matters here since production (AWS EC2) only updates on an explicit `git pull && pm2 restart` — see `CLAUDE.md`.
 
+- **2026-11-04** — The three show lists (`forms/get-all`, `image-quiz/get-all-image-quizzes`, `image-music/get-all-image-music-shows`) now include `accessTier` (missing = restricted), for the website catalog (access-control Module 3).
 - **2026-11-04** — Access control Module 1 (backend half, not deployed): `accessTier` field (restricted / registered / demo; missing = restricted) on AudioQuiz, ImageQuiz and ImageMusic, with `GET/PUT /api/access-tier/:type/:id`. Nothing enforces it yet. Branch `feature/access-tier`, stacked on `feature/publish-to-public-list`. Deploy: `git pull && pm2 restart bestefar-backend` on EC2.
 - **2026-10-25** — Each S3 upload now gets a unique key (timestamp+random prefix) instead of the bare filename, so two uploads with the same name no longer overwrite each other (symptom: one melody played on every page). AudioQuiz `save-form` now only requires page + quizName so a new quiz can be saved with just its name. Added `test/audio-save.test.js` (`npm test`). **Deployed to EC2**.
 - **2026-10-22** — Added BilderMusikk PDF (`GET /api/image-music/pdf/:id`): same question/answer sheets as BildeQuiz with the MusikkQuiz cover; on-screen text is the clue, melody name the answer. **Deployed to EC2**.

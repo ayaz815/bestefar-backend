@@ -147,6 +147,7 @@ const getAllShows = async (req, res) => {
         quizInfo: quiz.quizInfo || "",
         quizMusician: quiz.quizMusician || "",
         isPublic: quiz.isPublic !== false,
+        accessTier: quiz.accessTier || "restricted",
         quizForms,
       };
     });
