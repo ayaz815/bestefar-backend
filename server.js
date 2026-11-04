@@ -13,6 +13,8 @@ const crosswordRoutes = require("./routes/crosswordRoutes");
 const visibilityRoutes = require("./routes/visibilityRoutes");
 const accessTierRoutes = require("./routes/accessTierRoutes");
 const playRoutes = require("./routes/playRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const requireAdmin = require("./middleware/requireAdmin");
 const JSZip = require("jszip");
 const path = require("path");
 const fs = require("fs");
@@ -29,6 +31,7 @@ const app = express();
 connectDB();
 
 // ── Middleware ────────────────────────────────────────────────────────────────
+app.set("trust proxy", 1); // behind nginx: req.ip = the visitor (admin login lockout)
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(compression());
@@ -72,6 +75,7 @@ app.use("/api/crossword", crosswordRoutes); // ← NEW
 app.use("/api/visibility", visibilityRoutes);
 app.use("/api/access-tier", accessTierRoutes);
 app.use("/api/play", playRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/html", express.static(path.join(__dirname, "html")));
 
 app.get("/", (req, res) => {
@@ -79,7 +83,7 @@ app.get("/", (req, res) => {
 });
 
 // ── ZIP download ──────────────────────────────────────────────────────────────
-app.get("/download-zip", async (req, res) => {
+app.get("/download-zip", requireAdmin, async (req, res) => {
   try {
     const zip = new JSZip();
     const dataFolder = path.join(__dirname, "./html/data");

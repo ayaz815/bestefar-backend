@@ -153,7 +153,7 @@ const getAllShows = async (req, res) => {
       };
     });
 
-    return res.status(200).json({ shows: forPublicList(shows) });
+    return res.status(200).json({ shows: forPublicList(shows, req) });
   } catch (err) {
     console.error("❌ Error fetching shows:", err);
     return res.status(500).json({ error: "Failed to fetch shows" });

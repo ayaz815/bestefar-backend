@@ -102,9 +102,12 @@ test("player and PDF routes need a key: /api/play/*, audio-quiz player read, the
   assert.ok(guarded(require("../routes/imageMusicQuizRoutes"), "get", "/pdf/:id"));
 });
 
-test("REGRESSION: generator routes are NOT guarded (handled in 4c with a login)", () => {
-  const routerHas = (router, path) => router.stack.find((l) => l.route && l.route.path === path).route.stack.length;
-  assert.strictEqual(routerHas(require("../routes/formRoutes"), "/get-show/:id"), 1);
-  assert.strictEqual(routerHas(require("../routes/imageQuizRoutes"), "/get-image-quiz/:id"), 1);
-  assert.strictEqual(routerHas(require("../routes/imageMusicQuizRoutes"), "/get-image-music-show/:id"), 1);
+test("generator routes use the login (4c), not play keys", () => {
+  const requireAdmin = require("../middleware/requireAdmin");
+  const handlers = (router, path) => router.stack.find((l) => l.route && l.route.path === path).route.stack.map((s) => s.handle);
+  for (const [router, path] of [[require("../routes/formRoutes"), "/get-show/:id"], [require("../routes/imageQuizRoutes"), "/get-image-quiz/:id"], [require("../routes/imageMusicQuizRoutes"), "/get-image-music-show/:id"]]) {
+    const h = handlers(router, path);
+    assert.ok(h.includes(requireAdmin), path);
+    assert.strictEqual(h.length, 2, `${path}: login guard + handler only`);
+  }
 });

@@ -1,4 +1,6 @@
 const express = require("express");
+const requireAdmin = require("../middleware/requireAdmin");
+
 const router = express.Router();
 const {
   createCrossword,
@@ -10,11 +12,11 @@ const {
 
 const { getCrosswordPdf } = require("../controllers/pdfController");
 
-router.post("/create", createCrossword);
+router.post("/create", requireAdmin, createCrossword);
 router.get("/pdf/:id", getCrosswordPdf);
 router.get("/all", getAllCrosswords);
-router.get("/:id", getCrosswordById);
-router.put("/:id", updateCrossword);
-router.delete("/:id", deleteCrossword);
+router.get("/:id", requireAdmin, getCrosswordById);
+router.put("/:id", requireAdmin, updateCrossword);
+router.delete("/:id", requireAdmin, deleteCrossword);
 
 module.exports = router;

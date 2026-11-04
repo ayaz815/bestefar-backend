@@ -2,6 +2,8 @@ const express = require("express");
 const multer = require("multer");
 const { uploadMedia } = require("../controllers/uploadMediaController");
 
+const requireAdmin = require("../middleware/requireAdmin");
+
 const router = express.Router();
 
 // ✅ Configure multer for in-memory storage with support for both images and videos
@@ -24,10 +26,10 @@ const upload = multer({
 });
 
 // ✅ MAIN ROUTE - Unified endpoint for both images and videos
-router.post("/upload-media/:page", upload.single("mediaFile"), uploadMedia);
+router.post("/upload-media/:page", requireAdmin, upload.single("mediaFile"), uploadMedia);
 
 // ✅ BACKWARD COMPATIBILITY - Keep old route name but use new controller
 // This allows existing frontend code to work without changes
-router.post("/upload-image/:page", upload.single("mediaFile"), uploadMedia);
+router.post("/upload-image/:page", requireAdmin, upload.single("mediaFile"), uploadMedia);
 
 module.exports = router;

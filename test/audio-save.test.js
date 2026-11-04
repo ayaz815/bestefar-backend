@@ -18,7 +18,7 @@ process.env.AWS_REGION = "eu";
 
 const router = require("../routes/s3UploadRoute.js");
 const handler = router.stack.find((l) => l.route?.path === "/s3-presigned-url")
-  .route.stack[0].handle;
+  .route.stack.at(-1).handle; // last = the handler itself (requireAdmin runs first)
 
 const call = async (query) => {
   let out;

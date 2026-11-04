@@ -1,9 +1,11 @@
 const express = require("express");
+const requireAdmin = require("../middleware/requireAdmin");
+
 const router = express.Router();
 const { generatePresignedGetUrl } = require("../utils/s3Upload");
 
 // Route is now: /api/s3/download/signed-url
-router.get("/signed-url", async (req, res) => {
+router.get("/signed-url", requireAdmin, async (req, res) => {
   try {
     const { type, page, fileName } = req.query;
 

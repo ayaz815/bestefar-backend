@@ -9,6 +9,8 @@ const {
 const multer = require("multer");
 const requirePlayKey = require("../middleware/requirePlayKey");
 
+const requireAdmin = require("../middleware/requireAdmin");
+
 const router = express.Router();
 
 // Configure multer for in-memory storage
@@ -31,11 +33,11 @@ router.get("/test", (req, res) => {
 });
 
 // Routes for audio quiz CRUD operations
-router.post("/save-audio-quiz-form", upload.none(), saveAudioQuizForm);
+router.post("/save-audio-quiz-form", requireAdmin, upload.none(), saveAudioQuizForm);
 router.get("/get-all-audio-quizzes", getAllAudioQuizzes);
 // Player-only route (the generator uses /api/forms/get-show), so it needs a play key.
 router.get("/get-audio-quiz/:id", requirePlayKey("audio"), getAudioQuizById);
-router.put("/update-audio-quiz/:id", updateAudioQuiz);
-router.delete("/delete-audio-quiz/:id", deleteAudioQuiz);
+router.put("/update-audio-quiz/:id", requireAdmin, updateAudioQuiz);
+router.delete("/delete-audio-quiz/:id", requireAdmin, deleteAudioQuiz);
 
 module.exports = router;

@@ -291,7 +291,7 @@ const getAllImageQuizzes = async (req, res) => {
       updatedAt: quiz.updatedAt,
     }));
     console.log(`✅ Fetched ${shows.length} image quizzes`);
-    return res.status(200).json({ shows: forPublicList(shows) });
+    return res.status(200).json({ shows: forPublicList(shows, req) });
   } catch (err) {
     console.error("❌ Error fetching image quizzes:", err);
     return res.status(500).json({ error: "Failed to fetch image quizzes" });

@@ -223,7 +223,7 @@ const getAllImageMusicShows = async (req, res) => {
         screens: (show.screens || []).map(screenToClient),
         createdAt: show.createdAt,
         updatedAt: show.updatedAt,
-      }))),
+      })), req),
     });
   } catch (err) {
     console.error("❌ getAllImageMusicShows:", err);
