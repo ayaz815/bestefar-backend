@@ -7,6 +7,7 @@ const {
   deleteImageQuiz,
 } = require("../controllers/imageQuizController");
 const { getImageQuizPdf } = require("../controllers/pdfController");
+const requirePlayKey = require("../middleware/requirePlayKey");
 const multer = require("multer");
 
 const router = express.Router();
@@ -38,6 +39,7 @@ router.get("/get-all-image-quizzes", getAllImageQuizzes);
 router.get("/get-image-quiz/:id", getImageQuizById);
 router.put("/update-image-quiz/:id", updateImageQuiz);
 router.delete("/delete-image-quiz/:id", deleteImageQuiz);
-router.get("/pdf/:id", getImageQuizPdf);
+// Only the website catalog links here, so it needs a play key.
+router.get("/pdf/:id", requirePlayKey("image"), getImageQuizPdf);
 
 module.exports = router;

@@ -7,6 +7,7 @@ const {
   deleteShow,
 } = require("../controllers/formController");
 const { getAudioQuizPdf } = require("../controllers/pdfController");
+const requirePlayKey = require("../middleware/requirePlayKey");
 const multer = require("multer");
 
 const router = express.Router();
@@ -20,6 +21,7 @@ router.get("/get-all", getAllShows);
 router.get("/get-show/:id", getShowById);
 router.put("/update-show/:id", updateShow);
 router.delete("/delete-show/:id", deleteShow);
-router.get("/pdf/:id", getAudioQuizPdf);
+// Only the website catalog links here, so it needs a play key.
+router.get("/pdf/:id", requirePlayKey("audio"), getAudioQuizPdf);
 
 module.exports = router;

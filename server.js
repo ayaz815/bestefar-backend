@@ -12,6 +12,7 @@ const imageMusicRoutes = require("./routes/imageMusicQuizRoutes");
 const crosswordRoutes = require("./routes/crosswordRoutes");
 const visibilityRoutes = require("./routes/visibilityRoutes");
 const accessTierRoutes = require("./routes/accessTierRoutes");
+const playRoutes = require("./routes/playRoutes");
 const JSZip = require("jszip");
 const path = require("path");
 const fs = require("fs");
@@ -70,6 +71,7 @@ app.use("/api/image-music", imageMusicRoutes);
 app.use("/api/crossword", crosswordRoutes); // ← NEW
 app.use("/api/visibility", visibilityRoutes);
 app.use("/api/access-tier", accessTierRoutes);
+app.use("/api/play", playRoutes);
 app.use("/html", express.static(path.join(__dirname, "html")));
 
 app.get("/", (req, res) => {
