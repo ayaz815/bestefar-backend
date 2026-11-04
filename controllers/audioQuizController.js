@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const AudioQuiz = require("../models/AudioQuiz");
 const Quiz = require("../models/Form"); // Old model for backward compatibility
+const { forPublicList } = require("../utils/publicLists");
 
 const saveAudioQuizForm = async (req, res) => {
   const {
@@ -197,7 +198,7 @@ const getAllAudioQuizzes = async (req, res) => {
     console.log(
       `✅ Fetched ${allShows.length} audio quizzes (${oldShows.length} old + ${newShows.length} new)`
     );
-    return res.status(200).json({ shows: allShows });
+    return res.status(200).json({ shows: forPublicList(allShows) });
   } catch (err) {
     console.error("❌ Error fetching audio quizzes:", err);
     return res.status(500).json({ error: "Failed to fetch audio quizzes" });

@@ -1,5 +1,6 @@
 // controllers/imageMusicController.js
 const ImageMusic = require("../models/ImageMusicQuiz");
+const { forPublicList } = require("../utils/publicLists");
 
 const escRe = (s) => s.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -207,7 +208,7 @@ const getAllImageMusicShows = async (req, res) => {
   try {
     const shows = await ImageMusic.find().sort({ createdAt: -1 });
     return res.status(200).json({
-      shows: shows.map((show) => ({
+      shows: forPublicList(shows.map((show) => ({
         id: show._id.toString(),
         quizName: show.quizName,
         quizType: "imagemusic",
@@ -222,7 +223,7 @@ const getAllImageMusicShows = async (req, res) => {
         screens: (show.screens || []).map(screenToClient),
         createdAt: show.createdAt,
         updatedAt: show.updatedAt,
-      })),
+      }))),
     });
   } catch (err) {
     console.error("❌ getAllImageMusicShows:", err);

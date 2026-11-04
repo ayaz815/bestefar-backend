@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const Quiz = require("../models/Form");
+const { forPublicList } = require("../utils/publicLists");
 
 const saveForm = async (req, res) => {
   const {
@@ -152,7 +153,7 @@ const getAllShows = async (req, res) => {
       };
     });
 
-    return res.status(200).json({ shows });
+    return res.status(200).json({ shows: forPublicList(shows) });
   } catch (err) {
     console.error("❌ Error fetching shows:", err);
     return res.status(500).json({ error: "Failed to fetch shows" });
