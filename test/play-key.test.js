@@ -87,7 +87,7 @@ const guarded = (router, method, path) => {
   const res = { status(c) { code = c; return this; }, json() {} };
   layer.route.stack[0].handle({ query: {}, params: { id: ID } }, res, () => {});
   process.env = saved;
-  return code === 403 && layer.route.stack.length === 2;
+  return code === 403; // the key check runs first
 };
 
 test("player and PDF routes need a key: /api/play/*, audio-quiz player read, the three PDFs", () => {
@@ -107,7 +107,7 @@ test("generator routes use the login (4c), not play keys", () => {
   const handlers = (router, path) => router.stack.find((l) => l.route && l.route.path === path).route.stack.map((s) => s.handle);
   for (const [router, path] of [[require("../routes/formRoutes"), "/get-show/:id"], [require("../routes/imageQuizRoutes"), "/get-image-quiz/:id"], [require("../routes/imageMusicQuizRoutes"), "/get-image-music-show/:id"]]) {
     const h = handlers(router, path);
-    assert.ok(h.includes(requireAdmin), path);
-    assert.strictEqual(h.length, 2, `${path}: login guard + handler only`);
+    assert.strictEqual(h[0], requireAdmin, `${path}: login checked first`);
+    assert.ok(!h.some((fn) => fn.name === "" && fn.length === 3 && String(fn).includes("verifyPlayKey")), `${path}: no play key`);
   }
 });

@@ -11,6 +11,8 @@ const requirePlayKey = require("../middleware/requirePlayKey");
 
 const requireAdmin = require("../middleware/requireAdmin");
 
+const { signMediaInResponse, stripMediaInBody } = require("../utils/privateMedia");
+
 const router = express.Router();
 
 // Configure multer for in-memory storage
@@ -33,10 +35,10 @@ router.get("/test", (req, res) => {
 });
 
 // Routes for audio quiz CRUD operations
-router.post("/save-audio-quiz-form", requireAdmin, upload.none(), saveAudioQuizForm);
-router.get("/get-all-audio-quizzes", getAllAudioQuizzes);
+router.post("/save-audio-quiz-form", requireAdmin, upload.none(), stripMediaInBody, saveAudioQuizForm);
+router.get("/get-all-audio-quizzes", signMediaInResponse, getAllAudioQuizzes);
 // Player-only route (the generator uses /api/forms/get-show), so it needs a play key.
-router.get("/get-audio-quiz/:id", requirePlayKey("audio"), getAudioQuizById);
+router.get("/get-audio-quiz/:id", requirePlayKey("audio"), signMediaInResponse, getAudioQuizById);
 router.put("/update-audio-quiz/:id", requireAdmin, updateAudioQuiz);
 router.delete("/delete-audio-quiz/:id", requireAdmin, deleteAudioQuiz);
 

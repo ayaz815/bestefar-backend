@@ -15,6 +15,7 @@ const accessTierRoutes = require("./routes/accessTierRoutes");
 const playRoutes = require("./routes/playRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const requireAdmin = require("./middleware/requireAdmin");
+const { stripMediaInBody } = require("./utils/privateMedia");
 const JSZip = require("jszip");
 const path = require("path");
 const fs = require("fs");
@@ -34,6 +35,7 @@ connectDB();
 app.set("trust proxy", 1); // behind nginx: req.ip = the visitor (admin login lockout)
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(stripMediaInBody); // never store a signed (expiring) media link; multipart routes do it after multer
 app.use(compression());
 
 // This API serves two very different kinds of clients:

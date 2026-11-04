@@ -15,10 +15,12 @@ const HANDLERS = {
   imagemusic: { show: getImageMusicShowById, pdf: getImageMusicPdf },
 };
 
+const { signMediaInResponse } = require("../utils/privateMedia");
+
 const router = express.Router();
 
 for (const [type, handler] of Object.entries(HANDLERS)) {
-  router.get(`/${type}/:id`, requirePlayKey(type), handler.show);
+  router.get(`/${type}/:id`, requirePlayKey(type), signMediaInResponse, handler.show);
   router.get(`/${type}/:id/pdf`, requirePlayKey(type), handler.pdf);
 }
 

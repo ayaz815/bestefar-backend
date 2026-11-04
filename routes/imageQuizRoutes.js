@@ -12,6 +12,8 @@ const multer = require("multer");
 
 const requireAdmin = require("../middleware/requireAdmin");
 
+const { signMediaInResponse, stripMediaInBody } = require("../utils/privateMedia");
+
 const router = express.Router();
 
 // Configure multer for in-memory storage
@@ -36,9 +38,9 @@ router.get("/test", (req, res) => {
 // ✅ These routes work perfectly with the unified media system
 // They receive mediaFileName, mediaFileUrl, and mediaType from the frontend
 // No changes needed here!
-router.post("/save-image-quiz-form", requireAdmin, upload.none(), saveImageQuizForm);
-router.get("/get-all-image-quizzes", getAllImageQuizzes);
-router.get("/get-image-quiz/:id", requireAdmin, getImageQuizById);
+router.post("/save-image-quiz-form", requireAdmin, upload.none(), stripMediaInBody, saveImageQuizForm);
+router.get("/get-all-image-quizzes", signMediaInResponse, getAllImageQuizzes);
+router.get("/get-image-quiz/:id", requireAdmin, signMediaInResponse, getImageQuizById);
 router.put("/update-image-quiz/:id", requireAdmin, updateImageQuiz);
 router.delete("/delete-image-quiz/:id", requireAdmin, deleteImageQuiz);
 // Only the website catalog links here, so it needs a play key.
