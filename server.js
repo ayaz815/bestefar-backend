@@ -16,9 +16,7 @@ const playRoutes = require("./routes/playRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const requireAdmin = require("./middleware/requireAdmin");
 const { stripMediaInBody } = require("./utils/privateMedia");
-const JSZip = require("jszip");
 const path = require("path");
-const fs = require("fs");
 const cors = require("cors");
 const compression = require("compression");
 const Quiz = require("./models/Form");
@@ -82,37 +80,6 @@ app.use("/html", express.static(path.join(__dirname, "html")));
 
 app.get("/", (req, res) => {
   res.send("Backend is running and accessible via Nginx!");
-});
-
-// ── ZIP download ──────────────────────────────────────────────────────────────
-app.get("/download-zip", requireAdmin, async (req, res) => {
-  try {
-    const zip = new JSZip();
-    const dataFolder = path.join(__dirname, "./html/data");
-    zip.file(
-      "index.html",
-      fs.readFileSync(path.join(__dirname, "./html/index.html"))
-    );
-    const addFilesToZip = (folderPath, zipFolder) => {
-      fs.readdirSync(folderPath).forEach((file) => {
-        const fullPath = path.join(folderPath, file);
-        if (fs.statSync(fullPath).isDirectory())
-          addFilesToZip(fullPath, zipFolder.folder(file));
-        else zipFolder.file(file, fs.readFileSync(fullPath));
-      });
-    };
-    addFilesToZip(dataFolder, zip.folder("data"));
-    const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
-    res.setHeader(
-      "Content-Disposition",
-      "attachment; filename=html_project.zip"
-    );
-    res.setHeader("Content-Type", "application/zip");
-    res.send(zipBuffer);
-  } catch (error) {
-    console.error("Error generating ZIP file:", error);
-    res.status(500).send("Failed to generate ZIP file.");
-  }
 });
 
 app.get("/api/verify-mongo", async (req, res) => {

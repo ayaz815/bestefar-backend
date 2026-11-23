@@ -135,9 +135,10 @@ test("REGRESSION: routes the website catalog and players use stay without login"
   assert.deepStrictEqual(guarded, []);
 });
 
-test("server: /download-zip needs the login, admin routes mounted, real visitor address used", () => {
+test("server: old root /download-zip (read a missing html/index.html, always 500) is gone; admin routes mounted, real visitor address used", () => {
   const src = require("fs").readFileSync(__dirname + "/../server.js", "utf8");
-  assert.match(src, /app\.get\("\/download-zip", requireAdmin,/);
+  assert.doesNotMatch(src, /app\.get\("\/download-zip"/);
+  assert.match(src, /app\.use\("\/api\/zip", zipRoutes\)/, "the generator's ZIP route (/api/zip/download-zip) stays");
   assert.match(src, /app\.use\("\/api\/admin", adminRoutes\)/);
   assert.match(src, /app\.set\("trust proxy", 1\)/);
 });
